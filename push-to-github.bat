@@ -4,13 +4,14 @@ title Battlepie Network - Push to GitHub
 color 0B
 
 echo ===================================================================
-echo   [BATTLEPIE NETWORK] GITHUB PUSH ^& SETUP WIZARD
+echo   [BATTLEPIE NETWORK] GITHUB REPOSITORY PUSH WIZARD
 echo ===================================================================
 echo.
 
-set "GIT_PATH=%LOCALAPPDATA%\Programs\MinGit\cmd"
-if exist "%GIT_PATH%\git.exe" (
-    set "PATH=%GIT_PATH%;%PATH%"
+set "GIT_CMD=%LOCALAPPDATA%\Programs\MinGit\cmd"
+set "GIT_BIN=%LOCALAPPDATA%\Programs\MinGit\mingw64\bin"
+if exist "%GIT_CMD%\git.exe" (
+    set "PATH=%GIT_CMD%;%GIT_BIN%;%PATH%"
 )
 
 where git >nul 2>&1
@@ -20,49 +21,63 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [+] Local Git Repository Status:
-git status -s
+set "DEFAULT_REPO=https://github.com/kartikmungase60-afk/web.git"
+
+echo [+] Configured Repository:
+echo     %DEFAULT_REPO%
 echo.
+echo Press ENTER to push to this repository, or paste a new URL below:
+set /p USER_INPUT="Repository URL [%DEFAULT_REPO%]: "
 
-set /p REPO_URL="Enter your GitHub Repository URL (e.g. https://github.com/YourUsername/battlepie.git): "
-
-if "%REPO_URL%"=="" (
-    echo [!] No URL entered. Aborting.
-    pause
-    exit /b 1
+if "%USER_INPUT%"=="" (
+    set "REPO_URL=%DEFAULT_REPO%"
+) else (
+    set "REPO_URL=%USER_INPUT%"
 )
 
 echo.
-echo [+] Configuring remote origin to: %REPO_URL%
+echo [+] Setting remote origin to: %REPO_URL%
 git remote remove origin >nul 2>&1
 git remote add origin %REPO_URL%
 
-echo [+] Renaming branch to main...
+echo [+] Ensuring branch is named 'main'...
 git branch -M main
 
-echo [+] Staging and committing any recent changes...
+echo [+] Staging recent changes and committing...
 git add .
-git commit -m "feat: sync battlepie web store updates" >nul 2>&1
+git commit -m "feat: setup battlepie website and in-game integration" >nul 2>&1
 
 echo.
-echo [+] Pushing code to GitHub...
+echo ===================================================================
+echo   PUSHING TO GITHUB (BRANCH: main)
+echo ===================================================================
+echo If this is your first time pushing, a GitHub browser login or
+echo token prompt will appear in a moment. Please approve it.
+echo.
+
 git push -u origin main
 
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ===================================================================
-    echo   [SUCCESS] Code successfully pushed to GitHub!
+    echo   [SUCCESS] Code successfully pushed to:
+    echo   https://github.com/kartikmungase60-afk/web
     echo ===================================================================
     echo.
-    echo Next optional steps on GitHub:
-    echo  1. Go to your repo -> Settings -> Pages.
-    echo  2. Under 'Build and deployment', choose 'GitHub Actions'.
-    echo  3. The website will automatically deploy live to GitHub Pages!
+    echo Next Steps on GitHub:
+    echo  1. Open: https://github.com/kartikmungase60-afk/web/settings/pages
+    echo  2. Under 'Source', select 'GitHub Actions'.
+    echo  3. The website will be published live on GitHub Pages!
     echo.
 ) else (
     echo.
-    echo [!] Push failed or authentication needed.
-    echo If GitHub asked for a password, please use a GitHub Personal Access Token (PAT).
+    echo ===================================================================
+    echo   [PUSH NOTE] If GitHub prompted for credentials:
+    echo ===================================================================
+    echo   - GitHub no longer accepts account passwords for git push.
+    echo   - If asked for Password, generate a Personal Access Token (classic)
+    echo     at: https://github.com/settings/tokens (select 'repo' scope)
+    echo     and paste it as the password.
     echo.
 )
 
