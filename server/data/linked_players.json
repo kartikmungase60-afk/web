@@ -1,5 +1,22 @@
 [
   {
+    "discordId": "1528726101872869387",
+    "discordUsername": "kartik_xd1",
+    "discordGlobalName": "Kartik",
+    "minecraftUsername": "Kartikplayzz",
+    "minecraftUuid": "89015a41-92ad-3a98-b6b4-67b3b0335d4a",
+    "accountType": "Java Cracked (Offline Mode)",
+    "isBedrock": false,
+    "isCracked": true,
+    "isPremium": false,
+    "skinName": "sr-recommendation-boy-wizzard",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-wizzard)",
+    "avatarUrl": "https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128",
+    "skinUrl": "https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right",
+    "linkedAt": "2026-10-01T10:03:57.507Z",
+    "lastSkinUpdate": "2026-10-01T10:05:27.698Z"
+  },
+  {
     "discordId": "1554913871825735831",
     "discordUsername": "kartik_xd1",
     "discordGlobalName": "Kartik",
@@ -9,11 +26,11 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": "sr-recommendation-boy-blue-sweater",
-    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-blue-sweater)",
-    "avatarUrl": "https://mc-heads.net/avatar/607adff9afdfd779d99f4dfd348d2c8d2d28abd9663b75e1f6616e2c79bbb3eb/128",
-    "skinUrl": "https://mc-heads.net/body/607adff9afdfd779d99f4dfd348d2c8d2d28abd9663b75e1f6616e2c79bbb3eb/right",
-    "linkedAt": "2026-10-01T09:52:32.444Z",
-    "lastSkinUpdate": "2026-10-01T09:52:33.238Z"
+    "skinName": "sr-recommendation-boy-wizzard",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-wizzard)",
+    "avatarUrl": "https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128",
+    "skinUrl": "https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right",
+    "linkedAt": "2026-10-01T10:21:49.588Z",
+    "lastSkinUpdate": "2026-10-01T10:21:49.822Z"
   }
 ]

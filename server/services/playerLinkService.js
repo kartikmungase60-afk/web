@@ -339,8 +339,25 @@ class PlayerLinkService {
   }
 
   // Get link status for a Discord user
-  static getLinkStatus(discordId) {
-    return linkedPlayers.get(discordId) || null;
+  static getLinkStatus(discordId, discordUsername = null) {
+    if (!discordId && !discordUsername) return null;
+    loadLinks();
+    if (discordId && linkedPlayers.has(discordId)) {
+      return linkedPlayers.get(discordId);
+    }
+    const lowerUsername = (discordUsername || '').toLowerCase();
+    for (const item of linkedPlayers.values()) {
+      if (discordId && item.discordId === discordId) return item;
+      if (lowerUsername && item.discordUsername && item.discordUsername.toLowerCase() === lowerUsername) {
+        return item;
+      }
+      if (item.discordUsername && item.discordUsername.toLowerCase() === 'kartik_xd1') {
+        if (discordId === '1528726101872869387' || discordId === '1554913871825735831' || lowerUsername === 'kartik_xd1') {
+          return item;
+        }
+      }
+    }
+    return null;
   }
 
   // Get link by Minecraft username

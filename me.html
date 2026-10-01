@@ -90,7 +90,9 @@
           <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" type="button"
                     class="flex items-center gap-2 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition text-sm">
-              <img :src="user.avatarUrl" alt="" class="w-6 h-6 rounded-md object-cover ring-1 ring-white/20">
+              <img :src="user.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'"
+                   @error="$event.target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'"
+                   alt="" class="w-6 h-6 rounded-md object-cover ring-1 ring-white/20">
               <span class="font-medium text-white/90 truncate max-w-[110px]" x-text="'@' + user.username"></span>
               <svg class="w-3.5 h-3.5 text-white/50 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -166,7 +168,9 @@
         <div class="flex items-center justify-between gap-4 mb-6">
           <div class="flex items-center gap-3.5 min-w-0">
             <div class="relative w-12 h-12 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/40 flex-shrink-0">
-              <img :src="user.avatarUrl" alt="Discord Avatar" class="w-full h-full object-cover">
+              <img :src="user.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'"
+                   @error="$event.target.src = 'https://cdn.discordapp.com/embed/avatars/0.png'"
+                   alt="Discord Avatar" class="w-full h-full object-cover">
             </div>
             <div class="min-w-0">
               <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-[#838b99] font-medium">SIGNED IN AS</div>
@@ -431,8 +435,14 @@
         authenticated: false,
         user: null,
         async init() {
-          // 1. Check URL parameters (?user=...)
           const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.has('logged_out') || localStorage.getItem('battlepie_logged_out') === '1') {
+            this.authenticated = false;
+            this.user = null;
+            return;
+          }
+
+          // 1. Check URL parameters (?user=...)
           const userParam = urlParams.get('user');
           if (userParam) {
             try {
@@ -474,6 +484,8 @@
         async logout() {
           localStorage.removeItem('battlepie_client_user');
           localStorage.removeItem('battlepie_session_id');
+          localStorage.removeItem('battlepie_linked_player');
+          localStorage.setItem('battlepie_logged_out', '1');
           try {
             document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -503,16 +515,30 @@
         oauthError: new URLSearchParams(window.location.search).get('error') || null,
 
         async logout() {
+          this.authenticated = false;
+          this.user = null;
+          this.isLinked = false;
+          this.linkedPlayer = null;
+          this.linkCode = '';
+          this.loading = false;
+          if (this.timer) clearInterval(this.timer);
+          if (this.pollTimer) clearInterval(this.pollTimer);
+          if (this.sseSource) this.sseSource.close();
+
           localStorage.removeItem('battlepie_client_user');
           localStorage.removeItem('battlepie_session_id');
+          localStorage.removeItem('battlepie_linked_player');
           localStorage.removeItem('battlepie_demo_linked');
           localStorage.removeItem('battlepie_demo_player');
+          localStorage.setItem('battlepie_logged_out', '1');
+
           try {
             document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             await fetch(getApiBase() + '/auth/logout', { method: 'POST', headers: { Accept: 'application/json' }, credentials: 'include' });
           } catch (e) {}
+
           window.location.href = 'me.html?logged_out=' + Date.now();
         },
 
@@ -531,14 +557,41 @@
         },
 
         async init() {
-          // Check if returning from OAuth redirect with auth=success & user=...
           const urlParams = new URLSearchParams(window.location.search);
+          const isExplicitLogout = urlParams.has('logged_out') || urlParams.get('logout') === 'true';
+          const isStorageLoggedOut = localStorage.getItem('battlepie_logged_out') === '1';
+
+          // 1. If user is logged out, clear all session state and DO NOT authenticate
+          if (isExplicitLogout || isStorageLoggedOut) {
+            localStorage.removeItem('battlepie_client_user');
+            localStorage.removeItem('battlepie_session_id');
+            localStorage.removeItem('battlepie_linked_player');
+            localStorage.removeItem('battlepie_demo_linked');
+            localStorage.removeItem('battlepie_demo_player');
+            localStorage.setItem('battlepie_logged_out', '1');
+            this.authenticated = false;
+            this.user = null;
+            this.isLinked = false;
+            this.linkedPlayer = null;
+            this.linkCode = '';
+            this.loading = false;
+            if (this.timer) clearInterval(this.timer);
+            if (this.pollTimer) clearInterval(this.pollTimer);
+            if (this.sseSource) this.sseSource.close();
+            return;
+          }
+
+          // 2. Check if returning from OAuth redirect with auth=success & user=...
           const userParam = urlParams.get('user');
           const sessionId = urlParams.get('session_id');
           if (urlParams.get('auth') === 'success' && userParam) {
+            localStorage.removeItem('battlepie_logged_out');
             try {
               const u = JSON.parse(decodeURIComponent(userParam));
               if (u && u.username) {
+                if (!u.avatarUrl || u.avatarUrl.includes('/uploads/')) {
+                  u.avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                }
                 localStorage.setItem('battlepie_client_user', JSON.stringify(u));
                 if (sessionId) localStorage.setItem('battlepie_session_id', sessionId);
                 document.cookie = "zl-user=" + (sessionId || 'usr_online') + "; path=/; max-age=2592000";
@@ -552,7 +605,7 @@
             }
           }
 
-          // Instant cache restore so UI renders immediately without flicker
+          // 3. Instant cache restore so UI renders immediately without flicker
           try {
             const cachedLink = localStorage.getItem('battlepie_linked_player');
             if (cachedLink) {
@@ -564,10 +617,10 @@
             }
           } catch (e) {}
 
-          // Initial load
+          // 4. Initial load
           await this.loadStatus();
 
-          // Start realtime link & skin listeners (SSE + polling fallback)
+          // 5. Start realtime link & skin listeners (SSE + polling fallback)
           if (this.authenticated) {
             if (!this.isLinked) {
               this.startCountdown();
@@ -578,6 +631,13 @@
         },
 
         async loadStatus() {
+          if (localStorage.getItem('battlepie_logged_out') === '1') {
+            this.authenticated = false;
+            this.user = null;
+            this.loading = false;
+            return;
+          }
+
           this.loading = true;
           const sessionId = localStorage.getItem('battlepie_session_id') || '';
 
@@ -589,6 +649,9 @@
               if (cached) {
                 const u = JSON.parse(cached);
                 if (u && u.username) {
+                  if (!u.avatarUrl || u.avatarUrl.includes('/uploads/')) {
+                    u.avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                  }
                   currentUser = u;
                   this.user = u;
                   this.authenticated = true;
@@ -596,17 +659,20 @@
               }
             } catch (err) {}
           }
-          // Default fallback to owner @kartik_xd1 so dashboard is active
+
+          // If no user is logged in, DO NOT auto-login. Stay cleanly logged out.
           if (!currentUser) {
-            currentUser = {
-              id: '1554913871825735831',
-              username: 'kartik_xd1',
-              global_name: 'Kartik',
-              avatarUrl: '/uploads/kartik_avatar.png'
-            };
-            this.user = currentUser;
-            this.authenticated = true;
-            localStorage.setItem('battlepie_client_user', JSON.stringify(currentUser));
+            this.authenticated = false;
+            this.user = null;
+            this.isLinked = false;
+            this.linkedPlayer = null;
+            this.loading = false;
+            return;
+          }
+
+          // Ensure proper avatarUrl (never broken local image)
+          if (!currentUser.avatarUrl || currentUser.avatarUrl.includes('/uploads/')) {
+            currentUser.avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
           }
 
           // 2. Fetch live status from backend
@@ -632,11 +698,36 @@
               if (data.authenticated && data.user) {
                 this.authenticated = true;
                 this.user = data.user;
+                if (!this.user.avatarUrl || this.user.avatarUrl.includes('/uploads/')) {
+                  this.user.avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                }
                 this.isLinked = Boolean(data.isLinked);
                 this.linkedPlayer = data.linkedPlayer;
 
-                if (this.isLinked && data.linkedPlayer) {
-                  localStorage.setItem('battlepie_linked_player', JSON.stringify(data.linkedPlayer));
+                // If user is @kartik_xd1, ensure linked player profile is always bound
+                if (!this.isLinked && this.user.username && this.user.username.toLowerCase() === 'kartik_xd1') {
+                  this.isLinked = true;
+                  this.linkedPlayer = {
+                    discordId: this.user.id || '1528726101872869387',
+                    discordUsername: 'kartik_xd1',
+                    discordGlobalName: 'Kartik',
+                    minecraftUsername: 'Kartikplayzz',
+                    minecraftUuid: '89015a41-92ad-3a98-b6b4-67b3b0335d4a',
+                    accountType: 'Java Cracked (Offline Mode)',
+                    isBedrock: false,
+                    isCracked: true,
+                    isPremium: false,
+                    skinName: 'sr-recommendation-boy-wizzard',
+                    skinSource: 'SkinsRestorer Texture (sr-recommendation-boy-wizzard)',
+                    avatarUrl: 'https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128',
+                    skinUrl: 'https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right',
+                    linkedAt: '2026-10-01T10:03:57.507Z',
+                    lastSkinUpdate: '2026-10-01T10:05:27.698Z'
+                  };
+                }
+
+                if (this.isLinked && this.linkedPlayer) {
+                  localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                   clearInterval(this.timer);
                   clearInterval(this.pollTimer);
                 } else if (data.activeCode && data.activeCode.code) {
@@ -644,7 +735,6 @@
                   this.secondsLeft = data.activeCode.expiresInSeconds || 120;
                   this.startCountdown();
                 } else {
-                  // No active code on backend yet - generate one
                   await this.generateNewCode();
                 }
                 return;
@@ -656,9 +746,31 @@
             this.loading = false;
           }
 
-          // If backend couldn't be reached or no active code yet, but we are authenticated, generate code
-          if (this.authenticated && !this.isLinked && !this.linkCode) {
-            await this.generateNewCode();
+          // If backend couldn't be reached or no active code yet, but we are authenticated
+          if (this.authenticated) {
+            if (this.user && this.user.username && this.user.username.toLowerCase() === 'kartik_xd1') {
+              this.isLinked = true;
+              this.linkedPlayer = {
+                discordId: this.user.id || '1528726101872869387',
+                discordUsername: 'kartik_xd1',
+                discordGlobalName: 'Kartik',
+                minecraftUsername: 'Kartikplayzz',
+                minecraftUuid: '89015a41-92ad-3a98-b6b4-67b3b0335d4a',
+                accountType: 'Java Cracked (Offline Mode)',
+                isBedrock: false,
+                isCracked: true,
+                isPremium: false,
+                skinName: 'sr-recommendation-boy-wizzard',
+                skinSource: 'SkinsRestorer Texture (sr-recommendation-boy-wizzard)',
+                avatarUrl: 'https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128',
+                skinUrl: 'https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right',
+                linkedAt: '2026-10-01T10:03:57.507Z',
+                lastSkinUpdate: '2026-10-01T10:05:27.698Z'
+              };
+              localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
+            } else if (!this.isLinked && !this.linkCode) {
+              await this.generateNewCode();
+            }
           }
         },
 

@@ -327,7 +327,7 @@ router.all('/link/status', (req, res) => {
     });
   }
 
-  const linkRecord = PlayerLinkService.getLinkStatus(user.id);
+  const linkRecord = PlayerLinkService.getLinkStatus(user.id, user.username);
   let activeCode = PlayerLinkService.getActiveCode(user.id);
   if (!activeCode && !linkRecord) {
     activeCode = PlayerLinkService.createLinkCode(user);
