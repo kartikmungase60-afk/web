@@ -79,8 +79,8 @@ barcolors:
 logo:
   change-interval: 3000
   texts:
-    - '<shadow:#000000FF>:mineorange_logo:'
+    - '<shadow:#000000FF><gradient:#FFE600:#FFAC00:#D45500>&lMINE ORANGE</gradient>'
 logo_small:
   change-interval: 3000
   texts:
-    - '<shadow:#000000FF>:mineorange_small:'
+    - '<shadow:#000000FF><gradient:#FFE600:#FFAC00:#D45500>&lMINE ORANGE</gradient>'
