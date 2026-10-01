@@ -32,6 +32,8 @@
     wrapper.style.pointerEvents = 'none';
     wrapper.style.zIndex = '0';
     wrapper.style.overflow = 'hidden';
+    wrapper.style.maskImage = 'radial-gradient(ellipse 75% 65% at 50% 50%, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,1) 100%)';
+    wrapper.style.webkitMaskImage = 'radial-gradient(ellipse 75% 65% at 50% 50%, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,1) 100%)';
     if (opts.gradientFrom && opts.gradientTo && opts.gradientFrom !== 'transparent') {
       wrapper.style.background = 'linear-gradient(180deg, ' + opts.gradientFrom + ' 0%, ' + opts.gradientTo + ' 100%)';
     }
@@ -191,12 +193,12 @@
       var hero = document.querySelector('.hero-bg');
       if (hero) {
         createLightLines(hero, {
-          gradientFrom: '#090d14',
-          gradientTo: '#06080d',
+          gradientFrom: 'transparent',
+          gradientTo: 'transparent',
           lightColor: '#ffaa44',
           lineColor: 'rgba(255, 255, 255, 0.08)',
           linesOpacity: 0.12,
-          lightsOpacity: 0.95
+          lightsOpacity: 0.85
         });
       }
     }
