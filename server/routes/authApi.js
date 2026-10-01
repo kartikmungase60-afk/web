@@ -338,6 +338,16 @@ router.all('/link/status', (req, res) => {
     user,
     isLinked: !!linkRecord,
     linkedPlayer: linkRecord,
+    youtubeMembership: {
+      active: true,
+      perks: ['[YT-MEMBER] Chat Prefix', '1.5x Daily Coins', 'Priority Queue']
+    },
+    serverBooster: {
+      active: true,
+      boostCount: 2,
+      tier: 3,
+      perks: ['[BOOSTER] Chat Badge & Halo', '+25% Global XP', 'Booster Lounge']
+    },
     activeCode: activeCode ? {
       code: activeCode.code,
       expiresAt: activeCode.expiresAt,
