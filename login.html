@@ -248,17 +248,78 @@
       window.location.href = "me.html";
     }
 
+    // Check if Discord redirected back with an access token in URL hash (Implicit Grant)
+    async function checkDiscordHashCallback() {
+      const hash = window.location.hash.substring(1);
+      if (!hash) return;
+      const params = new URLSearchParams(hash);
+      const token = params.get('access_token');
+      if (!token) return;
+
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+
+      const btnDiscord = document.getElementById('btnDiscord');
+      if (btnDiscord) {
+        btnDiscord.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Connecting Real Discord Account...
+        `;
+      }
+
+      try {
+        const res = await fetch('https://discord.com/api/v10/users/@me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Discord status: ' + res.status);
+        const discordUser = await res.json();
+        
+        const avatarUrl = discordUser.avatar 
+          ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png?size=128`
+          : `https://cdn.discordapp.com/embed/avatars/${(parseInt(discordUser.id) >> 22) % 6}.png`;
+
+        const sessionUser = {
+          id: discordUser.id,
+          username: discordUser.username,
+          global_name: discordUser.global_name || discordUser.username,
+          avatarUrl: avatarUrl,
+          discriminator: discordUser.discriminator || '0',
+          joinedAt: new Date().toISOString()
+        };
+
+        localStorage.setItem('battlepie_client_user', JSON.stringify(sessionUser));
+        document.cookie = "zl-user=" + encodeURIComponent(JSON.stringify(sessionUser)) + "; path=/; max-age=2592000";
+
+        const backend = getBackendUrl();
+        if (backend) {
+          fetch(`${backend}/api/auth/register-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sessionUser)
+          }).catch(() => {});
+        }
+
+        window.location.href = "me.html?auth=success";
+      } catch (err) {
+        console.error('Discord user fetch error:', err);
+        alert('Could not authenticate Discord account: ' + err.message);
+      }
+    }
+    checkDiscordHashCallback();
+
     function startDiscordOAuth() {
+      const clientId = '1554913871825735831';
       const backend = getBackendUrl();
       const returnUrl = window.location.origin + window.location.pathname.replace('login.html', 'me.html');
-      if (backend) {
+      if (backend && !isStatic) {
         window.location.href = `${backend}/auth/discord?return_to=${encodeURIComponent(returnUrl)}`;
-      } else if (isLocalhost) {
-        window.location.href = `/auth/discord?return_to=${encodeURIComponent(returnUrl)}`;
       } else {
-        // Show the backend setup modal
-        document.getElementById('inputBackendUrl').value = getBackendUrl();
-        document.getElementById('backendModal').classList.remove('hidden');
+        const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+        const scope = encodeURIComponent('identify');
+        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
+        window.location.href = discordAuthUrl;
       }
     }
 
