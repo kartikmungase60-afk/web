@@ -244,17 +244,15 @@
               <span class="text-xs font-medium max-w-[110px] truncate hidden sm:inline">@${user.username}</span>
               <svg class="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div id="${dropdownId}" class="hidden absolute right-0 mt-2 w-52 rounded-xl bg-[#0b0f18] border border-white/10 shadow-2xl py-1.5 z-50 text-xs text-white/80">
-              <div class="px-3 py-2 border-b border-white/5">
-                <div class="font-bold text-white truncate">${user.global_name || user.username}</div>
-                <div class="font-mono text-[10px] text-white/40">Discord ID: ${user.id}</div>
-              </div>
-              <a href="me.html" class="block px-3 py-2 hover:bg-white/5 text-white/90">My Account & Link</a>
-              <a href="store.html" class="block px-3 py-2 hover:bg-white/5 text-white/90">Web Store</a>
-              <a href="checkout.html" class="block px-3 py-2 hover:bg-white/5 text-white/90">Cart / Checkout</a>
-              <div class="border-t border-white/5 my-1"></div>
-              <button type="button" onclick="window.doBattlepieLogout()" class="w-full text-left block px-3 py-2 hover:bg-red-500/20 text-rose-300 font-semibold cursor-pointer">
-                Log Out
+            <div id="${dropdownId}" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-[#0b0f18] border border-white/10 shadow-2xl py-1.5 z-50 text-sm text-white/90">
+              <a href="me.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Profile</a>
+              <a href="store.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Orders</a>
+              <a href="https://discord.gg/mineorange" target="_blank" rel="noopener" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Applications</a>
+              <a href="https://discord.gg/mineorange" target="_blank" rel="noopener" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Tournaments</a>
+              <button type="button" onclick="window.toggleUserMenu('${dropdownId}'); window.openSkinModal()" class="w-full text-left block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition cursor-pointer">Change Skin</button>
+              <button type="button" onclick="window.toggleUserMenu('${dropdownId}'); window.openPasswordModal()" class="w-full text-left block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition cursor-pointer">Change Password</button>
+              <button type="button" onclick="window.doBattlepieLogout()" class="w-full text-left block px-4 py-2 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 font-medium transition cursor-pointer">
+                Logout
               </button>
             </div>
           </div>
@@ -516,5 +514,80 @@
     setInterval(refreshServerStatus, 30000);
     setInterval(refreshDiscordStatus, 60000);
   });
+
+  // Global Modals for Change Skin and Change Password
+  window.openSkinModal = function() {
+    let el = document.getElementById('mineorange-skin-modal');
+    if (!el) {
+      const modalHtml = `
+        <div id="mineorange-skin-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="if(event.target===this)window.closeSkinModal()">
+          <div class="relative w-full max-w-md rounded-2xl bg-[#0d1017] border border-white/10 shadow-2xl p-6 text-white animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-display font-bold text-xl text-white">Change Skin</h3>
+              <button type="button" onclick="window.closeSkinModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <p class="text-sm text-white/70 mb-4 leading-relaxed">
+              You can change your Minecraft skin directly on the server at <strong class="text-orange-400">Node1.mineorange.fun</strong>:
+            </p>
+            <div class="p-3.5 rounded-xl bg-black/50 border border-white/10 font-mono text-xs text-orange-300 mb-4 flex items-center justify-between">
+              <span>/skin &lt;player_name&gt;</span>
+              <button type="button" onclick="navigator.clipboard.writeText('/skin '); if(window.zlToast) window.zlToast('Copied /skin to clipboard!');" class="text-[11px] px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white font-sans transition">Copy</button>
+            </div>
+            <p class="text-xs text-white/50 mb-5">
+              Example: <code class="text-white/80">/skin Kartikplayzz</code> or <code class="text-white/80">/skin Dream</code>. Your custom skin will instantly sync with the web profile!
+            </p>
+            <div class="flex gap-2 justify-end">
+              <button type="button" onclick="window.closeSkinModal()" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm font-medium transition cursor-pointer">Got it</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      el = document.getElementById('mineorange-skin-modal');
+    }
+    el.classList.remove('hidden');
+  };
+
+  window.closeSkinModal = function() {
+    const el = document.getElementById('mineorange-skin-modal');
+    if (el) el.classList.add('hidden');
+  };
+
+  window.openPasswordModal = function() {
+    let el = document.getElementById('mineorange-password-modal');
+    if (!el) {
+      const modalHtml = `
+        <div id="mineorange-password-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="if(event.target===this)window.closePasswordModal()">
+          <div class="relative w-full max-w-md rounded-2xl bg-[#0d1017] border border-white/10 shadow-2xl p-6 text-white animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-display font-bold text-xl text-white">Change Password</h3>
+              <button type="button" onclick="window.closePasswordModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <p class="text-sm text-white/70 mb-4 leading-relaxed">
+              To update your in-game login password, join the server at <strong class="text-orange-400">Node1.mineorange.fun</strong> and run:
+            </p>
+            <div class="p-3.5 rounded-xl bg-black/50 border border-white/10 font-mono text-xs text-orange-300 mb-4 flex items-center justify-between">
+              <span>/changepassword &lt;old&gt; &lt;new&gt;</span>
+              <button type="button" onclick="navigator.clipboard.writeText('/changepassword '); if(window.zlToast) window.zlToast('Copied to clipboard!');" class="text-[11px] px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white font-sans transition">Copy</button>
+            </div>
+            <p class="text-xs text-white/50 mb-5">
+              Make sure to choose a strong password that you do not use on other servers.
+            </p>
+            <div class="flex gap-2 justify-end">
+              <button type="button" onclick="window.closePasswordModal()" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm font-medium transition cursor-pointer">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      el = document.getElementById('mineorange-password-modal');
+    }
+    el.classList.remove('hidden');
+  };
+
+  window.closePasswordModal = function() {
+    const el = document.getElementById('mineorange-password-modal');
+    if (el) el.classList.add('hidden');
+  };
 
 })();
