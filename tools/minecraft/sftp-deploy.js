@@ -73,9 +73,10 @@ async function deploy() {
         const localConfig = path.join(rootDir, 'tools/minecraft/config.yml');
         await uploadFile(sftp, localConfig, 'plugins/BattlepieLink/config.yml');
 
-        // 6. Upload Java plugin jar
+        // 6. Upload Java plugin jar to both filenames
         const localJar = path.join(rootDir, 'tools/minecraft/BattlepieLink.jar');
         if (fs.existsSync(localJar)) {
+          await uploadFile(sftp, localJar, 'plugins/MineOrangeLink.jar');
           await uploadFile(sftp, localJar, 'plugins/BattlepieLink.jar');
         }
 

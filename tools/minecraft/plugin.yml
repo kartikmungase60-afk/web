@@ -9,6 +9,7 @@ commands:
   link:
     description: Link your Minecraft account with your Mine Orange Discord
     usage: /link <8-digit code>
+    aliases: [mclink, discordlink]
   mineorangelink:
     description: Manage MineOrangeLink plugin
     usage: /mineorangelink reload

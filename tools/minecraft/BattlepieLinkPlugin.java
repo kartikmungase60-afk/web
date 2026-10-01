@@ -37,25 +37,28 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
         if (getCommand("link") != null) {
             getCommand("link").setExecutor(this);
         }
+        if (getCommand("mineorangelink") != null) {
+            getCommand("mineorangelink").setExecutor(this);
+        }
         if (getCommand("battlepielink") != null) {
             getCommand("battlepielink").setExecutor(this);
         }
 
         getLogger().info("MineOrangeLinkPlugin v1.2.0 enabled! API URL: " + apiUrl);
 
-        // Keep-alive background task: pings /health every 10 minutes (prevents Render free-tier cold sleep)
+        // Keep-alive background task: pings /health every 10 minutes
         backgroundExecutor.scheduleWithFixedDelay(() -> {
             try {
                 String healthUrl = apiUrl.replace("/api/auth/link/ingame", "/health");
                 URL u = new URL(healthUrl);
                 HttpURLConnection conn = (HttpURLConnection) u.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("User-Agent", "BattlepieLink/1.2.0 (KeepAlive)");
+                conn.setRequestProperty("User-Agent", "MineOrangeLink/1.2.0 (KeepAlive)");
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(15000);
                 int code = conn.getResponseCode();
                 if (code == 200) {
-                    getLogger().info("Battlepie Web API keep-alive ping successful (HTTP 200).");
+                    getLogger().info("Mine Orange Web API keep-alive ping successful (HTTP 200).");
                 }
             } catch (Exception ignored) {}
         }, 15, 600, TimeUnit.SECONDS);
@@ -99,6 +102,33 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
         }
     }
 
+    // Safe thread-independent player kick dispatcher (compatible with Folia, Paper, Spigot)
+    public void kickPlayerSync(Player player, String reason) {
+        if (player == null || !player.isOnline()) return;
+        final String colored = ChatColor.translateAlternateColorCodes('&', reason);
+
+        // 1. Try Folia EntityScheduler via reflection
+        try {
+            Object entityScheduler = player.getClass().getMethod("getScheduler").invoke(player);
+            entityScheduler.getClass().getMethod("run", org.bukkit.plugin.Plugin.class, Consumer.class, Runnable.class)
+                .invoke(entityScheduler, this, (Consumer<Object>) (task) -> player.kickPlayer(colored), null);
+            return;
+        } catch (Throwable ignored) {}
+
+        // 2. Try Bukkit Sync Scheduler
+        try {
+            Bukkit.getScheduler().runTask(this, () -> player.kickPlayer(colored));
+            return;
+        } catch (Throwable ignored) {}
+
+        // 3. Fallback direct kick
+        try {
+            player.kickPlayer(colored);
+        } catch (Throwable t) {
+            getLogger().warning("Failed to kick player: " + t.getMessage());
+        }
+    }
+
     // Safe async executor (works on Folia, Paper, Spigot)
     public void runAsync(Runnable runnable) {
         // 1. Try Folia Async Scheduler
@@ -123,7 +153,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // Admin reload command
         if (args.length >= 1 && args[0].equalsIgnoreCase("reload")) {
-            if (sender.isOp() || sender.hasPermission("battlepie.admin")) {
+            if (sender.isOp() || sender.hasPermission("mineorange.admin") || sender.hasPermission("battlepie.admin")) {
                 loadConfiguration();
                 sender.sendMessage(ChatColor.translateAlternateColorCodes('&', 
                     "&8[&6&lMine Orange&8] &aConfiguration reloaded! API URL: &e" + apiUrl));
@@ -221,11 +251,9 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
                 getLogger().info("[MineOrangeLink] Verification for " + playerName + " (code: " + code + ") returned HTTP " + statusCode);
 
                 if (statusCode == 200) {
-                    sendMsg(player, "&8[&6&lMine Orange&8] &a&lSUCCESS! &7Your account &f" + playerName + " &7is now linked to Discord!");
-                    if (finalSkinName != null) {
-                        sendMsg(player, "&8[&6&lMine Orange&8] &bSkinsRestorer: &7Synced custom skin &e" + finalSkinName + "&7.");
-                    }
-                    sendMsg(player, "&8[&6&lMine Orange&8] &aYour perks, roles, and store sync are now active.");
+                    getLogger().info("[MineOrangeLink] Verification successful for " + playerName + " (code: " + code + ")! Disconnecting player with linked screen...");
+                    String kickScreen = "&a&lLinked Successfully\n\n&7Your Minecraft account is now linked.\n&ePlease rejoin the server.";
+                    kickPlayerSync(player, kickScreen);
                 } else {
                     String errMsg = "Invalid or expired link code.";
                     if (responseBody.contains("\"error\":\"")) {

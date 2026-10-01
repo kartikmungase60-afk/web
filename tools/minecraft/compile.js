@@ -26,3 +26,6 @@ execSync(`jar -cvf "${outJar}" -C "${buildDir}" .`, { stdio: 'pipe' });
 
 const stat = fs.statSync(outJar);
 console.log(`[Build] SUCCESS! MineOrangeLink.jar created (${stat.size} bytes).`);
+const battlepieJar = path.join(rootDir, 'tools/minecraft/BattlepieLink.jar');
+fs.copyFileSync(outJar, battlepieJar);
+console.log(`[Build] Also copied to ${battlepieJar}`);
