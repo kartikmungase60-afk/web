@@ -473,7 +473,7 @@ router.post('/link/ingame', async (req, res) => {
     success: true,
     message: result.message,
     player: result.player,
-    minecraftChatResponse: `§8[§cBattlepie§8] §aSuccessfully linked §e${result.player.minecraftUsername} §7(${result.player.accountType}) §ato Discord §e@${result.player.discordUsername}§a!`
+    minecraftChatResponse: `§8[§6Mine Orange§8] §aSuccessfully linked §e${result.player.minecraftUsername} §7(${result.player.accountType}) §ato Discord §e@${result.player.discordUsername}§a!`
   });
 });
 

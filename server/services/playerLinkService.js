@@ -238,7 +238,7 @@ class PlayerLinkService {
     }
 
     if (!codeEntry) {
-      return { success: false, error: 'Invalid link code. Please check the code on https://battlepie.net/me' };
+      return { success: false, error: 'Invalid link code. Please check the code on https://mineorange.fun/me' };
     }
 
     if (codeEntry.expiresAt && codeEntry.expiresAt <= Date.now()) {
