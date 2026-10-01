@@ -226,81 +226,43 @@
               <div class="p-5 sm:p-6 rounded-2xl border border-white/5 bg-[#090b10] flex flex-col justify-between relative overflow-hidden group">
                 <div class="absolute -right-12 -top-12 w-32 h-32 bg-red-600/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
-                  <div class="flex items-center justify-between gap-2 mb-2.5">
-                    <div class="flex items-center gap-2">
-                      <div class="w-7 h-7 rounded-lg bg-red-600/15 border border-red-500/20 flex items-center justify-center text-red-500">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                        </svg>
-                      </div>
-                      <h3 class="font-display font-bold text-base text-white">YouTube Membership</h3>
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-7 h-7 rounded-lg bg-red-600/15 border border-red-500/20 flex items-center justify-center text-red-500">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
                     </div>
-                    <template x-if="youtubeMembershipActive">
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ACTIVE
-                      </span>
-                    </template>
-                    <template x-if="!youtubeMembershipActive">
-                      <span class="px-2.5 py-0.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold text-white/50 uppercase tracking-wider">NOT CONNECTED</span>
-                    </template>
+                    <h3 class="font-display font-bold text-base text-white">YouTube Membership</h3>
                   </div>
 
-                  <template x-if="youtubeMembershipActive">
-                    <div>
-                      <p class="text-xs text-white/60 leading-relaxed mb-3">
-                        Membership synced with <span class="text-white font-medium font-mono" x-text="user && user.username ? '@' + user.username : '@kartik_xd1'">@kartik_xd1</span>. In-game rewards delivered.
-                      </p>
-                      <!-- Synced In-Game Perks -->
-                      <div class="space-y-1.5 mb-5 p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                        <div class="flex items-center gap-2 text-[11px] text-white/70">
-                          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>In-game <span class="text-red-400 font-bold font-mono">[YT-MEMBER]</span> Chat Prefix</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-[11px] text-white/70">
-                          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>1.5x Daily Coins & Member Cosmetic Halo</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-[11px] text-white/70">
-                          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>Priority Lobby & Queue Access</span>
-                        </div>
-                      </div>
+                  <!-- In-Game Perks -->
+                  <div class="space-y-2 mb-5 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div class="flex items-center gap-2 text-[11px] text-white/70">
+                      <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>In-game <span class="text-red-400 font-bold font-mono">[YT-MEMBER]</span> Chat Prefix</span>
                     </div>
-                  </template>
-
-                  <template x-if="!youtubeMembershipActive">
-                    <p class="text-xs text-white/50 leading-relaxed mb-6">Connect YouTube to sync membership rewards.</p>
-                  </template>
+                    <div class="flex items-center gap-2 text-[11px] text-white/70">
+                      <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>1.5x Daily Coins & Member Cosmetic Halo</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-white/70">
+                      <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>Priority Lobby & Queue Access</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
-                  <template x-if="youtubeMembershipActive">
-                    <div class="flex items-center gap-2.5 flex-wrap">
-                      <button type="button" @click="window.open('https://youtube.com', '_blank')"
-                              class="px-4 py-2 rounded-xl bg-[#ff2e1f] hover:bg-[#ff4232] text-white text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer">
-                        <span>Manage Channel</span>
-                      </button>
-                      <button type="button" @click="window.zlToast && window.zlToast('YouTube membership perks are active and delivering in-game!')"
-                              class="px-3.5 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-300 text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer">
-                        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        <span>Perks Synced</span>
-                      </button>
-                    </div>
-                  </template>
-                  <template x-if="!youtubeMembershipActive">
-                    <button type="button" @click="window.open('https://youtube.com', '_blank')"
-                            class="px-5 py-2.5 rounded-xl bg-[#ff2e1f] hover:bg-[#ff4232] text-white text-xs font-semibold transition">
-                      Connect YouTube
-                    </button>
-                  </template>
+                  <button type="button" @click="window.open('https://youtube.com', '_blank')"
+                          class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#ff2e1f] hover:bg-[#ff4232] text-white text-xs font-semibold transition cursor-pointer">
+                    Manage Channel
+                  </button>
                 </div>
               </div>
 
@@ -308,83 +270,43 @@
               <div class="p-5 sm:p-6 rounded-2xl border border-white/5 bg-[#090b10] flex flex-col justify-between relative overflow-hidden group">
                 <div class="absolute -right-12 -top-12 w-32 h-32 bg-[#5865F2]/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
-                  <div class="flex items-center justify-between gap-2 mb-2.5">
-                    <div class="flex items-center gap-2">
-                      <div class="w-7 h-7 rounded-lg bg-[#5865F2]/15 border border-[#5865F2]/20 flex items-center justify-center text-[#7289da]">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.784 1.399 8.163L12 18.896l-7.333 3.86 1.399-8.163-5.934-5.784 8.2-1.192zm0 5.702l-2.223 4.503-4.97.722 3.597 3.506-.849 4.947L12 17.618l4.445 2.337-.849-4.947 3.597-3.506-4.97-.722L12 6.289z"/>
-                        </svg>
-                      </div>
-                      <h3 class="font-display font-bold text-base text-white">Server Booster</h3>
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-7 h-7 rounded-lg bg-[#5865F2]/15 border border-[#5865F2]/20 flex items-center justify-center text-[#7289da]">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.784 1.399 8.163L12 18.896l-7.333 3.86 1.399-8.163-5.934-5.784 8.2-1.192zm0 5.702l-2.223 4.503-4.97.722 3.597 3.506-.849 4.947L12 17.618l4.445 2.337-.849-4.947 3.597-3.506-4.97-.722L12 6.289z"/>
+                      </svg>
                     </div>
-                    <template x-if="discordBoosterActive">
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-[10px] font-bold text-purple-400 uppercase tracking-wider">
-                        <svg class="w-2.5 h-2.5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>ACTIVE · 2x BOOST
-                      </span>
-                    </template>
-                    <template x-if="!discordBoosterActive">
-                      <span class="px-2.5 py-0.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold text-white/50 uppercase tracking-wider">INACTIVE</span>
-                    </template>
+                    <h3 class="font-display font-bold text-base text-white">Server Booster</h3>
                   </div>
 
-                  <template x-if="discordBoosterActive">
-                    <div>
-                      <p class="text-xs text-white/60 leading-relaxed mb-3">
-                        2x Discord Server Boost active on Battlepie. Server booster perks unlocked.
-                      </p>
-                      <!-- Synced In-Game Perks -->
-                      <div class="space-y-1.5 mb-5 p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                        <div class="flex items-center gap-2 text-[11px] text-white/70">
-                          <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>In-game <span class="text-purple-400 font-bold font-mono">[BOOSTER]</span> Chat Badge & Sparkles</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-[11px] text-white/70">
-                          <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>+25% Global XP & Battle Pass Multiplier</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-[11px] text-white/70">
-                          <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>Discord Booster Lounge & Custom Nicknames</span>
-                        </div>
-                      </div>
+                  <!-- In-Game Perks -->
+                  <div class="space-y-2 mb-5 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div class="flex items-center gap-2 text-[11px] text-white/70">
+                      <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>In-game <span class="text-purple-400 font-bold font-mono">[BOOSTER]</span> Chat Badge & Sparkles</span>
                     </div>
-                  </template>
-
-                  <template x-if="!discordBoosterActive">
-                    <p class="text-xs text-white/50 leading-relaxed mb-6">Boost the Discord server to activate rewards.</p>
-                  </template>
+                    <div class="flex items-center gap-2 text-[11px] text-white/70">
+                      <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>+25% Global XP & Battle Pass Multiplier</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-white/70">
+                      <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>Discord Booster Lounge & Custom Nicknames</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
-                  <template x-if="discordBoosterActive">
-                    <div class="flex items-center gap-2.5 flex-wrap">
-                      <button type="button" @click="window.open('https://discord.gg/battlepie', '_blank')"
-                              class="px-4 py-2 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer">
-                        <span>Discord Booster</span>
-                      </button>
-                      <button type="button" @click="window.zlToast && window.zlToast('Server Booster perks are active and delivering in-game!')"
-                              class="px-3.5 py-2 rounded-xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 text-purple-300 text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer">
-                        <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        <span>Perks Synced</span>
-                      </button>
-                    </div>
-                  </template>
-                  <template x-if="!discordBoosterActive">
-                    <button type="button" @click="window.open('https://discord.gg/battlepie', '_blank')"
-                            class="px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition">
-                      View subscriptions
-                    </button>
-                  </template>
+                  <button type="button" @click="window.open('https://discord.gg/battlepie', '_blank')"
+                          class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs font-semibold transition cursor-pointer">
+                    Discord Booster
+                  </button>
                 </div>
               </div>
             </div>
