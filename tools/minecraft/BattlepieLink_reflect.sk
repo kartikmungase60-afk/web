@@ -26,6 +26,8 @@ command /link [<text>]:
             stop
 
         set {_code} to arg-1
+        replace all "-" with "" in {_code}
+        replace all " " with "" in {_code}
         set {_player} to "%player%"
         set {_uuid} to "%player's uuid%"
         set {_isBedrock} to false
