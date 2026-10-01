@@ -4,7 +4,7 @@ header-footer:
     default:
       header:
       - ''
-      - '<shadow:#1D0E46FF>:mineorange_logo:'
+      - '<shadow:#000000FF>:mineorange_logo:'
       - '<shadow:#000000FF>&fʟɪꜰᴇꜱᴛᴇᴀʟ'
       - ''
       - '<shadow:#000000FF>&a● &f<head:%player%> %player% &8| &a🌎 &f%ping%ms'
@@ -69,7 +69,7 @@ scoreboard:
   delay-on-join-milliseconds: 0
   scoreboards:
     default:
-      title: '<shadow:#1D0E46FF>:mineorange_small:'
+      title: '<shadow:#000000FF>:mineorange_small:'
       lines:
       - ' <shadow:#000000FF>       &fᴍɪɴᴇᴏʀᴀɴɢᴇ.ꜰᴜɴ'
       - ''
