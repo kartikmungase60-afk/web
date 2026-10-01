@@ -1,0 +1,62 @@
+# ========================================================
+# 🥧 BATTLEPIE LINK SKRIPT (Java Reflection Edition)
+# Works with skript-reflect - No HTTP addon required!
+# File: plugins/Skript/scripts/battlepie_link_reflect.sk
+# ========================================================
+
+import:
+    java.net.URL
+    java.net.HttpURLConnection
+    java.io.OutputStream
+    java.nio.charset.StandardCharsets
+    java.util.Scanner
+
+options:
+    api_url: "https://battlepie-backend.onrender.com/api/auth/link/ingame"
+    server_secret: "battlepie_secret_token_123"
+    web_url: "https://kartikmungase60-afk.github.io/web/me.html"
+    prefix: "&8[&c&lBattlepie&8]&r"
+
+command /link [<text>]:
+    description: Link your Minecraft account to Discord
+    trigger:
+        if arg-1 is not set:
+            send "{@prefix} &cUsage: &e/link <8-digit code>" to player
+            send "{@prefix} &7Get your link code at: &f{@web_url}" to player
+            stop
+
+        set {_code} to arg-1
+        set {_player} to "%player%"
+        set {_uuid} to "%player's uuid%"
+        set {_isBedrock} to false
+        if {_player} starts with "." or "*":
+            set {_isBedrock} to true
+
+        send "{@prefix} &7Contacting Battlepie network to verify code &e%{_code}%&7..." to player
+
+        set {_apiUrl} to "{@api_url}"
+        set {_secret} to "{@server_secret}"
+        set {_json} to "{""code"":""%{_code}%"",""player"":""%{_player}%"",""uuid"":""%{_uuid}%"",""isBedrock"":%{_isBedrock}%,""serverSecret"":""%{_secret}%""}"
+
+        # Native Java connection
+        set {_url} to new URL({_apiUrl})
+        set {_conn} to {_url}.openConnection()
+        {_conn}.setRequestMethod("POST")
+        {_conn}.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        {_conn}.setRequestProperty("User-Agent", "BattlepieLink/Skript")
+        {_conn}.setDoOutput(true)
+        {_conn}.setConnectTimeout(25000)
+        {_conn}.setReadTimeout(25000)
+
+        set {_os} to {_conn}.getOutputStream()
+        set {_bytes} to {_json}.getBytes(StandardCharsets.UTF_8)
+        {_os}.write({_bytes})
+        {_os}.close()
+
+        set {_status} to {_conn}.getResponseCode()
+        if {_status} is 200:
+            send "{@prefix} &a&lSUCCESS! &7Your account &f%{_player}% &7is now linked to Discord!" to player
+            send "{@prefix} &aYour community perks and web store sync are live." to player
+        else:
+            send "{@prefix} &c&lFAILED: &7Invalid or expired link code." to player
+            send "{@prefix} &7Please visit &f{@web_url} &7for a fresh code." to player

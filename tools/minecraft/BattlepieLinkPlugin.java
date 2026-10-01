@@ -8,22 +8,26 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Battlepie Network In-Game Discord Account Linker Plugin
- * Compatible with Spigot, Paper, Purpur 1.8 through 1.21+
- * Auto-detects: Java Premium, Java Cracked, Bedrock / Pocket Edition (Geyser/Floodgate),
- * and custom skins from SkinsRestorer!
+ * 100% Compatible with Spigot, Paper, Purpur, and Folia multi-threading (1.8 through 1.21+ / 26.3)
  */
 public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
 
     private String apiUrl;
     private String serverSecret;
+    private final ScheduledExecutorService backgroundExecutor = Executors.newSingleThreadScheduledExecutor();
 
     @Override
     public void onEnable() {
@@ -37,26 +41,29 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
             getCommand("battlepielink").setExecutor(this);
         }
 
-        getLogger().info("BattlepieLinkPlugin enabled! API URL: " + apiUrl);
+        getLogger().info("BattlepieLinkPlugin v1.2.0 enabled! API URL: " + apiUrl);
 
-        // Keep-alive background task: pings /health every 10 minutes to prevent Render free-tier cold sleep
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+        // Keep-alive background task: pings /health every 10 minutes (prevents Render free-tier cold sleep)
+        backgroundExecutor.scheduleWithFixedDelay(() -> {
             try {
                 String healthUrl = apiUrl.replace("/api/auth/link/ingame", "/health");
                 URL u = new URL(healthUrl);
                 HttpURLConnection conn = (HttpURLConnection) u.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("User-Agent", "BattlepieLink/1.0 (Minecraft Server; KeepAlive)");
+                conn.setRequestProperty("User-Agent", "BattlepieLink/1.2.0 (KeepAlive)");
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(15000);
                 int code = conn.getResponseCode();
                 if (code == 200) {
                     getLogger().info("Battlepie Web API keep-alive ping successful (HTTP 200).");
                 }
-            } catch (Exception ignored) {
-                // Background keep-alive ping failure is non-fatal
-            }
-        }, 40L, 20L * 60L * 10L); // 10 minutes interval
+            } catch (Exception ignored) {}
+        }, 15, 600, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void onDisable() {
+        backgroundExecutor.shutdownNow();
     }
 
     public void loadConfiguration() {
@@ -65,9 +72,56 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
         this.serverSecret = getConfig().getString("server-secret", "battlepie_secret_token_123");
     }
 
+    // Safe thread-independent message dispatcher (compatible with Folia, Paper, Spigot)
+    public void sendMsg(Player player, String message) {
+        if (player == null || !player.isOnline()) return;
+        final String colored = ChatColor.translateAlternateColorCodes('&', message);
+
+        // 1. Try Folia EntityScheduler via reflection
+        try {
+            Object entityScheduler = player.getClass().getMethod("getScheduler").invoke(player);
+            entityScheduler.getClass().getMethod("run", org.bukkit.plugin.Plugin.class, Consumer.class, Runnable.class)
+                .invoke(entityScheduler, this, (Consumer<Object>) (task) -> player.sendMessage(colored), null);
+            return;
+        } catch (Throwable ignored) {}
+
+        // 2. Try Bukkit Sync Scheduler
+        try {
+            Bukkit.getScheduler().runTask(this, () -> player.sendMessage(colored));
+            return;
+        } catch (Throwable ignored) {}
+
+        // 3. Direct thread-safe send (Paper/Folia native support)
+        try {
+            player.sendMessage(colored);
+        } catch (Throwable t) {
+            getLogger().warning("Failed to send message to player: " + t.getMessage());
+        }
+    }
+
+    // Safe async executor (works on Folia, Paper, Spigot)
+    public void runAsync(Runnable runnable) {
+        // 1. Try Folia Async Scheduler
+        try {
+            Object asyncScheduler = Bukkit.class.getMethod("getAsyncScheduler").invoke(null);
+            asyncScheduler.getClass().getMethod("runNow", org.bukkit.plugin.Plugin.class, Consumer.class)
+                .invoke(asyncScheduler, this, (Consumer<Object>) (task) -> runnable.run());
+            return;
+        } catch (Throwable ignored) {}
+
+        // 2. Try Standard Bukkit Async Scheduler
+        try {
+            Bukkit.getScheduler().runTaskAsynchronously(this, runnable);
+            return;
+        } catch (Throwable ignored) {}
+
+        // 3. Fallback worker thread
+        new Thread(runnable, "BattlepieLink-Worker").start();
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Admin reload command: /battlepielink reload or /link reload
+        // Admin reload command
         if (args.length >= 1 && args[0].equalsIgnoreCase("reload")) {
             if (sender.isOp() || sender.hasPermission("battlepie.admin")) {
                 loadConfiguration();
@@ -84,8 +138,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
 
         Player player = (Player) sender;
         if (args.length < 1) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                "&8[&c&lBattlepie&8] &cUsage: &e/link <8-digit code>\n&7Get your link code at your web dashboard: &fhttps://kartikmungase60-afk.github.io/web/me.html"));
+            sendMsg(player, "&8[&c&lBattlepie&8] &cUsage: &e/link <8-digit code>\n&7Get your link code at: &fhttps://kartikmungase60-afk.github.io/web/me.html");
             return true;
         }
 
@@ -93,7 +146,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
         String playerName = player.getName();
         String playerUuid = player.getUniqueId().toString();
 
-        // 1. Check if player is Bedrock / Pocket Edition
+        // Check if player is Bedrock / Pocket Edition
         boolean isBedrock = playerName.startsWith(".") || playerName.startsWith("*");
         try {
             Class<?> floodgateClass = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
@@ -102,14 +155,11 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
             if (result instanceof Boolean && (Boolean) result) {
                 isBedrock = true;
             }
-        } catch (Throwable ignored) {
-            // Floodgate API not present
-        }
+        } catch (Throwable ignored) {}
 
-        // 2. Check if player is using a custom skin via SkinsRestorer (v14 or v15)
+        // Check SkinsRestorer custom skin
         String skinName = null;
         try {
-            // SkinsRestorer v15 API
             Class<?> srProviderClass = Class.forName("net.skinsrestorer.api.SkinsRestorerProvider");
             Object srApi = srProviderClass.getMethod("get").invoke(null);
             Object playerStorage = srApi.getClass().getMethod("getPlayerStorage").invoke(srApi);
@@ -122,37 +172,30 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
             }
         } catch (Throwable t1) {
             try {
-                // SkinsRestorer v14 / legacy API fallback
                 Class<?> srApiClass = Class.forName("net.skinsrestorer.api.SkinsRestorerAPI");
                 Object srApi = srApiClass.getMethod("getApi").invoke(null);
                 Object skin = srApi.getClass().getMethod("getSkinName", String.class).invoke(srApi, player.getName());
-                if (skin != null) {
-                    skinName = skin.toString();
-                }
-            } catch (Throwable t2) {
-                // SkinsRestorer not loaded
-            }
+                if (skin != null) skinName = skin.toString();
+            } catch (Throwable ignored) {}
         }
 
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-            "&8[&c&lBattlepie&8] &7Contacting Battlepie network to verify code &e" + code + "&7..."));
+        sendMsg(player, "&8[&c&lBattlepie&8] &7Contacting Battlepie network to verify code &e" + code + "&7...");
 
         final boolean finalIsBedrock = isBedrock;
         final String finalSkinName = skinName;
         final String currentApiUrl = this.apiUrl;
         final String currentSecret = this.serverSecret;
 
-        // Execute asynchronous HTTP request with robust timeouts and standard headers
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+        runAsync(() -> {
             try {
                 URL url = new URL(currentApiUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
                 conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("User-Agent", "BattlepieLink/1.0 (Minecraft Server; Paper)");
+                conn.setRequestProperty("User-Agent", "BattlepieLink/1.2.0 (Minecraft Server)");
                 conn.setDoOutput(true);
-                conn.setConnectTimeout(25000); // 25s timeout for cloud cold starts
+                conn.setConnectTimeout(25000);
                 conn.setReadTimeout(25000);
 
                 String escapedSkin = finalSkinName != null ? "\"" + finalSkinName.replace("\"", "\\\"") + "\"" : "null";
@@ -167,44 +210,41 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
                 }
 
                 int statusCode = conn.getResponseCode();
-                Scanner scanner = new Scanner(statusCode >= 400 ? conn.getErrorStream() : conn.getInputStream(), "UTF-8");
-                String responseBody = scanner.useDelimiter("\\A").hasNext() ? scanner.next() : "";
-                scanner.close();
+                InputStream stream = (statusCode >= 400) ? conn.getErrorStream() : conn.getInputStream();
+                String responseBody = "";
+                if (stream != null) {
+                    try (Scanner scanner = new Scanner(stream, StandardCharsets.UTF_8.name())) {
+                        responseBody = scanner.useDelimiter("\\A").hasNext() ? scanner.next() : "";
+                    }
+                }
 
-                Bukkit.getScheduler().runTask(this, () -> {
-                    if (statusCode == 200) {
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                            "&8[&c&lBattlepie&8] &a&lSUCCESS! &7Your account &f" + playerName + " &7is now linked to Discord!"));
-                        if (finalSkinName != null) {
-                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                                "&8[&c&lBattlepie&8] &bSkinsRestorer: &7Synced custom skin &e" + finalSkinName + " &7with web profile."));
-                        }
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                            "&8[&c&lBattlepie&8] &aYour in-game perks, community roles, and store sync are now live."));
-                    } else {
-                        String errMsg = "Invalid or expired link code.";
-                        if (responseBody.contains("\"error\":\"")) {
-                            try {
-                                int sIdx = responseBody.indexOf("\"error\":\"") + 9;
-                                int eIdx = responseBody.indexOf("\"", sIdx);
-                                if (eIdx > sIdx) errMsg = responseBody.substring(sIdx, eIdx);
-                            } catch (Exception ignored) {}
-                        }
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                            "&8[&c&lBattlepie&8] &c&lFAILED: &7" + errMsg + " Please check your code on the web page."));
+                getLogger().info("[BattlepieLink] Verification for " + playerName + " (code: " + code + ") returned HTTP " + statusCode);
+
+                if (statusCode == 200) {
+                    sendMsg(player, "&8[&c&lBattlepie&8] &a&lSUCCESS! &7Your account &f" + playerName + " &7is now linked to Discord!");
+                    if (finalSkinName != null) {
+                        sendMsg(player, "&8[&c&lBattlepie&8] &bSkinsRestorer: &7Synced custom skin &e" + finalSkinName + "&7.");
                     }
-                });
+                    sendMsg(player, "&8[&c&lBattlepie&8] &aYour perks, roles, and store sync are now active.");
+                } else {
+                    String errMsg = "Invalid or expired link code.";
+                    if (responseBody.contains("\"error\":\"")) {
+                        try {
+                            int sIdx = responseBody.indexOf("\"error\":\"") + 9;
+                            int eIdx = responseBody.indexOf("\"", sIdx);
+                            if (eIdx > sIdx) errMsg = responseBody.substring(sIdx, eIdx);
+                        } catch (Exception ignored) {}
+                    }
+                    sendMsg(player, "&8[&c&lBattlepie&8] &c&lFAILED: &7" + errMsg + " Please check your code on the web page.");
+                }
             } catch (Exception ex) {
-                Bukkit.getScheduler().runTask(this, () -> {
-                    String msg = ex.getMessage();
-                    if (msg != null && msg.toLowerCase().contains("timed out")) {
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                            "&8[&c&lBattlepie&8] &eNotice: Web server is waking up from sleep. Please try running &f/link " + code + " &eagain in 5 seconds!"));
-                    } else {
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                            "&8[&c&lBattlepie&8] &cError connecting to Battlepie Web API: &7" + msg));
-                    }
-                });
+                getLogger().severe("[BattlepieLink] Error connecting to Web API: " + ex.getMessage());
+                String msg = ex.getMessage();
+                if (msg != null && msg.toLowerCase().contains("timed out")) {
+                    sendMsg(player, "&8[&c&lBattlepie&8] &eNotice: Web server is waking up from sleep. Please try &f/link " + code + " &eagain in 5 seconds!");
+                } else {
+                    sendMsg(player, "&8[&c&lBattlepie&8] &cError connecting to Battlepie Web API: &7" + msg);
+                }
             }
         });
 
