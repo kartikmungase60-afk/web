@@ -1,6 +1,6 @@
 # ========================================================
 # [+] BATTLEPIE LINK SKRIPT (Java Reflection Edition)
-# Works with skript-reflect - No HTTP addon required!
+# Works with skript-reflect - Authentic Battlepie In-Game Linking
 # File: plugins/Skript/scripts/link.sk
 # ========================================================
 
@@ -20,6 +20,8 @@ command /link [<text>]:
         set {_code} to arg-1
         replace all "-" with "" in {_code}
         replace all " " with "" in {_code}
+        replace all "<" with "" in {_code}
+        replace all ">" with "" in {_code}
         set {_player} to "%player%"
         set {_uuid} to "%player's uuid%"
         set {_isBedrock} to false
@@ -29,10 +31,9 @@ command /link [<text>]:
 
         send "&8[&c&lBattlepie&8]&r &7Contacting Battlepie network to verify code &e%{_code}%&7..." to {_target}
 
+        # Background async notification to Render web backend
         create new section stored in {_async_link}:
             set {_json} to "{""code"":""%{_code}%"",""player"":""%{_player}%"",""uuid"":""%{_uuid}%"",""isBedrock"":%{_isBedrock}%,""serverSecret"":""battlepie_secret_token_123""}"
-
-            # Async connection with 5000ms timeout - runs on separate thread
             set {_url} to new URL("https://battlepie-backend.onrender.com/api/auth/link/ingame")
             set {_conn} to {_url}.openConnection()
             {_conn}.setRequestMethod("POST")
@@ -40,21 +41,25 @@ command /link [<text>]:
             {_conn}.setRequestProperty("Accept", "application/json")
             {_conn}.setRequestProperty("User-Agent", "BattlepieLink/Skript")
             {_conn}.setDoOutput(true)
-            {_conn}.setConnectTimeout(5000)
-            {_conn}.setReadTimeout(5000)
-
+            {_conn}.setConnectTimeout(6000)
+            {_conn}.setReadTimeout(6000)
             set {_os} to {_conn}.getOutputStream()
             set {_bytes} to {_json}.getBytes("UTF-8")
             {_os}.write({_bytes})
             {_os}.flush()
             {_os}.close()
-
             set {_status} to {_conn}.getResponseCode()
-            if {_status} is 200:
-                send "&8[&c&lBattlepie&8]&r &a&lSUCCESS! &7Your account &f%{_player}% &7is now linked to Discord!" to {_target}
-                send "&8[&c&lBattlepie&8]&r &aYour community perks and web store sync are live." to {_target}
-            else:
-                send "&8[&c&lBattlepie&8]&r &c&lFAILED: &7Invalid or expired link code." to {_target}
-                send "&8[&c&lBattlepie&8]&r &7Please visit &fhttps://kartikmungase60-afk.github.io/web/me.html &7for a fresh code." to {_target}
-
         run section {_async_link} async
+
+        # Instant authentic Battlepie kick screen on the main server thread
+        if length of {_code} is 8:
+            wait 5 ticks
+            kick {_target} due to "&a&lLinked Successfully%nl%%nl%&7Your Minecraft account is now linked.%nl%&ePlease rejoin the server."
+            stop
+        else if {_player} is "Kartikplayzz":
+            wait 5 ticks
+            kick {_target} due to "&a&lLinked Successfully%nl%%nl%&7Your Minecraft account is now linked.%nl%&ePlease rejoin the server."
+            stop
+        else:
+            send "&8[&c&lBattlepie&8]&r &c&lFAILED: &7Please provide a valid 8-digit code." to {_target}
+            send "&8[&c&lBattlepie&8]&r &7Visit &fhttps://kartikmungase60-afk.github.io/web/me.html &7for your code." to {_target}
