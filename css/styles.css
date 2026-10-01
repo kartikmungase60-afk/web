@@ -199,11 +199,12 @@ a {
 
 /* Hero Section Background */
 .hero-bg {
-  background-image: var(--hero-overlay), url('https://battlepie.net/uploads/bg-1783260044152.png');
-  background-size: auto, cover;
-  background-position: center, center calc(50% - 80px);
-  background-repeat: no-repeat;
+  background: radial-gradient(circle at 50% 25%, rgba(255, 120, 0, 0.09) 0%, rgba(13, 17, 23, 0.96) 65%, #070a0f 100%), #070a0f;
   position: relative;
+  overflow: hidden;
+}
+:root[data-theme="light"] .hero-bg {
+  background: radial-gradient(circle at 50% 25%, rgba(255, 120, 0, 0.06) 0%, rgba(246, 248, 250, 0.95) 65%, #edf1f7 100%), #edf1f7;
 }
 
 /* Floating animated logo */
