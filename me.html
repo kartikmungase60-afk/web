@@ -269,27 +269,6 @@
               </button>
             </div>
 
-            <!-- Direct Web Link Box (Instant Fallback) -->
-            <div class="mt-6 pt-5 border-t border-[#1b1f2a]">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] font-semibold text-[#8c92a2] uppercase tracking-wider">Fast Web Link (No server command needed)</span>
-                <span class="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Instant</span>
-              </div>
-              <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" x-model="manualUsername" placeholder="Enter Minecraft IGN (e.g. Kartikplayzz)"
-                       @keydown.enter="linkDirectly()"
-                       class="flex-1 bg-[#040507] border border-[#1a1e28] rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-[#555a68] focus:border-red-500 focus:outline-none transition font-mono">
-                <button type="button" @click="linkDirectly()" :disabled="directLoading || !manualUsername.trim()"
-                        class="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-semibold text-xs py-2.5 px-5 rounded-lg transition shadow-md flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50">
-                  <svg x-show="directLoading" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                  </svg>
-                  <span x-text="directLoading ? 'Linking...' : 'Link Account Now'">Link Account Now</span>
-                </button>
-              </div>
-              <p class="text-[11px] text-[#656c7d] mt-2">Enter your in-game name above to link your Minecraft account to this Discord profile instantly.</p>
-            </div>
-
           </div>
         </template>
       </div>
@@ -435,8 +414,6 @@
         copied: false,
         sseSource: null,
         oauthError: new URLSearchParams(window.location.search).get('error') || null,
-        manualUsername: '',
-        directLoading: false,
 
         async logout() {
           localStorage.removeItem('battlepie_client_user');
@@ -685,39 +662,6 @@
           }).catch(() => {
             if (window.zlToast) window.zlToast('Command copied: ' + cmd);
           });
-        },
-
-        async linkDirectly() {
-          const name = this.manualUsername.trim();
-          if (!name || this.directLoading) return;
-          this.directLoading = true;
-          try {
-            const api = getApiBase();
-            const res = await fetch(api + '/api/auth/link/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                code: this.linkCode || '8492',
-                minecraftUsername: name,
-                isBedrock: name.startsWith('.') || name.startsWith('*')
-              })
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-              this.isLinked = true;
-              this.linkedPlayer = data.player;
-              clearInterval(this.timer);
-              clearInterval(this.pollTimer);
-              if (window.zlToast) window.zlToast(`Successfully linked to ${data.player.minecraftUsername}!`);
-            } else {
-              if (window.zlToast) window.zlToast(data.error || 'Failed to link account');
-            }
-          } catch (e) {
-            console.error('Direct link error:', e);
-            if (window.zlToast) window.zlToast('Error connecting to backend');
-          } finally {
-            this.directLoading = false;
-          }
         },
 
         async unlinkAccount() {
