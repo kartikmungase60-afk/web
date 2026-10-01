@@ -9,6 +9,11 @@ DEFAULT_HOST = "Node1.mineorange.fun"
 DEFAULT_PORT = 2022
 DEFAULT_USER = "master.006427ba"
 
+_orig_print = print
+def print(*args, **kwargs):
+    kwargs.setdefault("flush", True)
+    _orig_print(*args, **kwargs)
+
 def deploy(password, host=DEFAULT_HOST, port=DEFAULT_PORT, username=DEFAULT_USER, backend_url="http://localhost:3000", upload_all=False):
     print("=" * 60)
     print(f"Connecting to SFTP server: {host}:{port}")
@@ -83,9 +88,9 @@ server-secret: "battlepie_secret_token_123"
         # 5. Upload essential QoL plugins: SkinsRestorer, ViaVersion
         plugins_to_upload = [
             ("SkinsRestorer.jar", "Skins for cracked and premium players"),
-            ("ViaVersion-5.2.1.jar", "Allows newer client versions to join"),
-            ("ViaBackwards-5.2.1.jar", "Allows older client versions to join"),
-            ("ViaRewind-3.0.7.jar", "1.7/1.8 compatibility support"),
+            ("ViaVersion.jar", "Allows newer client versions to join"),
+            ("ViaBackwards.jar", "Allows older client versions to join"),
+            ("ViaRewind.jar", "1.7/1.8 compatibility support"),
         ]
 
         if upload_all:
