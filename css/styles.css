@@ -209,7 +209,7 @@ a {
 /* Floating animated logo */
 .logo-float {
   animation: logoFloat 6s ease-in-out infinite;
-  filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 40px rgba(0, 229, 255, 0.2));
+  filter: drop-shadow(0 20px 35px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 35px rgba(255, 120, 0, 0.3));
   transition: transform 0.3s ease;
 }
 @keyframes logoFloat {
