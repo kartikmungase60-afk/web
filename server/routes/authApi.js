@@ -124,7 +124,7 @@ router.get('/discord', (req, res) => {
     res.cookie('oauth_return_to', returnTo, { maxAge: 10 * 60 * 1000, httpOnly: false });
   }
 
-  const clientId = config.discord.clientId || process.env.DISCORD_CLIENT_ID || '1554913871825735831';
+  const clientId = config.discord.clientId || process.env.DISCORD_CLIENT_ID || '1555211386198696049';
   const redirectUri = encodeURIComponent(getEffectiveRedirectUri(req));
   const scope = encodeURIComponent('identify');
   const promptParam = req.query.prompt ? `&prompt=${encodeURIComponent(req.query.prompt)}` : '';
@@ -178,7 +178,7 @@ router.get('/discord/callback', async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: config.discord.clientId || process.env.DISCORD_CLIENT_ID || '1554913871825735831',
+        client_id: config.discord.clientId || process.env.DISCORD_CLIENT_ID || '1555211386198696049',
         client_secret: config.discord.clientSecret,
         grant_type: 'authorization_code',
         code,

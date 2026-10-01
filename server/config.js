@@ -27,9 +27,9 @@ module.exports = {
   discord: {
     inviteCode: process.env.DISCORD_INVITE || 'mineorange',
     guildId: process.env.DISCORD_GUILD_ID || '',
-    clientId: process.env.DISCORD_CLIENT_ID || '1554913871825735831',
-    clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
-    redirectUri: process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback',
+    clientId: process.env.DISCORD_CLIENT_ID || '1555211386198696049',
+    clientSecret: process.env.DISCORD_CLIENT_SECRET || 'U9oUs61e2dEby7ikapN80tQ0ZT3aabJ1',
+    redirectUri: process.env.DISCORD_REDIRECT_URI || 'https://mineorange.fun/auth/discord/callback',
   },
 
   // Coupon promo codes

@@ -20,8 +20,8 @@ services:
       - key: SERVER_SECRET
         value: battlepie_secret_token_123
       - key: DISCORD_CLIENT_ID
-        value: 1554913871825735831
+        value: 1555211386198696049
       - key: DISCORD_CLIENT_SECRET
-        value: LxV1_ZVa8EtXVhv5SEk6E_8OPL0dNJUM
+        value: U9oUs61e2dEby7ikapN80tQ0ZT3aabJ1
       - key: DISCORD_INVITE
         value: battlepie
