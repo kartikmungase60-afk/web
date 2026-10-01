@@ -25,7 +25,7 @@ module.exports = {
 
   // Discord Configuration
   discord: {
-    inviteCode: process.env.DISCORD_INVITE || 'battlepie',
+    inviteCode: process.env.DISCORD_INVITE || 'rnRPZQvA8B',
     guildId: process.env.DISCORD_GUILD_ID || '',
     clientId: process.env.DISCORD_CLIENT_ID || '1554913871825735831',
     clientSecret: process.env.DISCORD_CLIENT_SECRET || '',

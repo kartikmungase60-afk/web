@@ -10,7 +10,7 @@ const BATTLEPIE_DATA = {
     bedrockPort: 19132,
     defaultPlayersOnline: 319,
     defaultDiscordOnline: 2583,
-    discordInvite: "https://discord.gg/battlepie",
+    discordInvite: "https://discord.gg/rnRPZQvA8B",
     version: "BattlePie 1.8-1.21+",
     motd: "BATTLEPIE | [1.21+] LIFESTEAL NEW SEASON OUT!"
   },
