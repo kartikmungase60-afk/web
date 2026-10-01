@@ -55,15 +55,11 @@
   <main class="relative z-10 flex-1 flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-[#0d1017]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl relative text-center">
       
-      <!-- Top Badge & Logo -->
+      <!-- Top Logo -->
       <div class="flex flex-col items-center gap-3 mb-6">
         <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 p-2.5 flex items-center justify-center shadow-xl shadow-black/50">
           <img src="https://battlepie.net/uploads/logo-1783260029774.png" alt="Battlepie Logo" class="w-full h-full object-contain">
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono font-medium">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          AUTH SYSTEM ONLINE
-        </span>
       </div>
 
       <!-- Title & Details -->
@@ -85,7 +81,8 @@
         </div>
       </div>
 
-        <!-- Primary Action: Continue with Discord -->
+      <!-- Primary Action: Continue with Discord -->
+      <div class="space-y-4">
         <button id="btnDiscord" type="button"
            class="w-full py-4 px-6 rounded-2xl bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-3 transition shadow-xl shadow-[#5865F2]/30 hover:shadow-[#5865F2]/50 hover:-translate-y-0.5 group cursor-pointer active:translate-y-0">
           <svg class="w-6 h-6 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
@@ -94,40 +91,9 @@
           <span>Continue with Discord</span>
         </button>
 
-        <button id="btnQuickKartik" type="button"
-           class="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/75 hover:text-white font-medium text-xs flex items-center justify-center gap-2 transition cursor-pointer">
-          <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          <span>Continue as @kartik_xd1</span>
-        </button>
-
         <p class="text-[11px] text-white/40">
           Official Discord OAuth2 · Connects your real Discord account
         </p>
-      </div>
-
-      <!-- Feature points -->
-      <div class="mt-8 pt-6 border-t border-white/5 grid grid-cols-2 gap-3 text-[11px] text-white/50 text-left">
-        <div class="flex items-center gap-2">
-          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <span>Minecraft Link /sync</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <span>Instant Perk Delivery</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <span>Cracked & Premium</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <span>Bedrock PE Support</span>
-        </div>
-      </div>
-
-      <!-- Footer back link -->
-      <div class="mt-8 text-center">
-        <a href="index.html" class="text-xs text-white/40 hover:text-white transition">← Return to Homepage</a>
       </div>
     </div>
   </main>
@@ -164,21 +130,6 @@
       `;
       startDiscordOAuth();
     });
-
-    const btnKartik = document.getElementById('btnQuickKartik');
-    if (btnKartik) {
-      btnKartik.addEventListener('click', function() {
-        localStorage.removeItem('battlepie_logged_out');
-        const user = {
-          id: '1528726101872869387',
-          username: 'kartik_xd1',
-          global_name: 'Kartik',
-          avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png'
-        };
-        localStorage.setItem('battlepie_client_user', JSON.stringify(user));
-        window.location.href = 'me.html';
-      });
-    }
   </script>
 
   <footer class="relative z-10 py-6 text-center text-xs text-white/30 border-t border-white/5">
