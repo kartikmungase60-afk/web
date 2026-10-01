@@ -133,11 +133,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
+// Process Crash Guard (prevents network drops from crashing the backend process)
+process.on('uncaughtException', (err) => {
+  console.warn('[Process] Caught unhandled exception (prevented crash):', err ? err.message : err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Process] Caught unhandled rejection (prevented crash):', reason ? (reason.message || reason) : reason);
+});
+
 // Start Server if executed directly
 if (require.main === module) {
   const server = app.listen(config.port, () => {
     console.log('========================================================');
-    console.log(`  🥧 BATTLEPIE NETWORK BACKEND SERVER STARTED`);
+    console.log(`  🍊 MINE ORANGE NETWORK BACKEND SERVER STARTED`);
     console.log(`  Local URL:       http://localhost:${config.port}`);
     console.log(`  Public Status:   http://localhost:${config.port}/api-public/status`);
     console.log(`  Discord Stats:   http://localhost:${config.port}/api-public/discord`);

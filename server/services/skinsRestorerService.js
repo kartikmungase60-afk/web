@@ -5,7 +5,7 @@ class SkinsRestorerService {
     this.config = {
       host: process.env.SFTP_HOST || 'Node1.mineorange.fun',
       port: parseInt(process.env.SFTP_PORT || '2022', 10),
-      username: process.env.SFTP_USERNAME || 'master.006427ba',
+      username: process.env.SFTP_USERNAME || 'master.3297b18b',
       password: process.env.SFTP_PASSWORD || 'Kartik@1234'
     };
   }

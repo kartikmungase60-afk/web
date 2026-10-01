@@ -9,12 +9,12 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": "sr-recommendation-boy-wizzard",
-    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-wizzard)",
-    "avatarUrl": "https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128",
-    "skinUrl": "https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right",
+    "skinName": "sr-recommendation-green-bird",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-green-bird)",
+    "avatarUrl": "https://mc-heads.net/avatar/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/128",
+    "skinUrl": "https://mc-heads.net/body/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/right",
     "linkedAt": "2026-10-01T10:03:57.507Z",
-    "lastSkinUpdate": "2026-10-01T10:05:27.698Z"
+    "lastSkinUpdate": "2026-10-01T19:33:12.113Z"
   },
   {
     "discordId": "1554913871825735831",
@@ -26,11 +26,10 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": "sr-recommendation-boy-wizzard",
-    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-wizzard)",
-    "avatarUrl": "https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128",
-    "skinUrl": "https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right",
-    "linkedAt": "2026-10-01T11:27:26.539Z",
-    "lastSkinUpdate": "2026-10-01T11:27:27.746Z"
+    "skinName": null,
+    "skinSource": "Default / Mojang",
+    "avatarUrl": "https://mc-heads.net/avatar/Kartikplayzz/128",
+    "skinUrl": "https://mc-heads.net/body/Kartikplayzz/right",
+    "linkedAt": "2026-10-01T19:33:13.952Z"
   }
 ]

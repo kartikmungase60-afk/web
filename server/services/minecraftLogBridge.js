@@ -17,9 +17,12 @@ class MinecraftLogBridge {
     this.config = {
       host: process.env.SFTP_HOST || 'Node1.mineorange.fun',
       port: parseInt(process.env.SFTP_PORT || '2022', 10),
-      username: process.env.SFTP_USERNAME || 'master.006427ba',
-      password: process.env.SFTP_PASSWORD || 'Kartik@1234'
+      username: process.env.SFTP_USERNAME || 'master.3297b18b',
+      password: process.env.SFTP_PASSWORD || 'Kartik@1234',
+      readyTimeout: 10000,
+      keepaliveInterval: 10000
     };
+    this.reconnectTimer = null;
   }
 
   start() {
@@ -33,54 +36,70 @@ class MinecraftLogBridge {
   stop() {
     this.running = false;
     if (this.timer) clearTimeout(this.timer);
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.skinSyncTimer) clearInterval(this.skinSyncTimer);
+    this.sftp = null;
     if (this.conn) {
-      try { this.conn.end(); } catch (e) {}
+      try { this.conn.destroy(); } catch (e) {}
+      this.conn = null;
     }
   }
 
   connect() {
     if (!this.running) return;
 
-    this.conn = new Client();
-    this.conn.on('ready', () => {
-      console.log('[MinecraftLogBridge] Connected to Minecraft server SFTP.');
-      this.conn.sftp((err, sftp) => {
-        if (err) {
-          console.error('[MinecraftLogBridge] SFTP session error:', err.message);
-          this.scheduleReconnect();
-          return;
-        }
-        this.sftp = sftp;
-        this.checkLogs();
-        // Immediately sync all skins on fresh connection
-        this.syncAllPlayerSkins();
-      });
-    });
-
-    this.conn.on('error', (err) => {
-      console.warn('[MinecraftLogBridge] SFTP connection error:', err.message);
-      this.scheduleReconnect();
-    });
-
-    this.conn.on('close', () => {
-      console.log('[MinecraftLogBridge] SFTP connection closed.');
-      this.scheduleReconnect();
-    });
+    if (this.conn) {
+      try { this.conn.destroy(); } catch (e) {}
+      this.conn = null;
+    }
+    this.sftp = null;
 
     try {
+      this.conn = new Client();
+      this.conn.on('ready', () => {
+        console.log('[MinecraftLogBridge] Connected to Minecraft server SFTP.');
+        if (!this.conn) return;
+        this.conn.sftp((err, sftp) => {
+          if (err || !sftp) {
+            console.error('[MinecraftLogBridge] SFTP session error:', err ? err.message : 'No SFTP session');
+            this.scheduleReconnect();
+            return;
+          }
+          this.sftp = sftp;
+          this.checkLogs();
+          // Immediately sync all skins on fresh connection
+          this.syncAllPlayerSkins();
+        });
+      });
+
+      this.conn.on('error', (err) => {
+        console.warn('[MinecraftLogBridge] SFTP connection error:', err ? err.message : 'Unknown');
+        this.scheduleReconnect();
+      });
+
+      this.conn.on('close', () => {
+        console.log('[MinecraftLogBridge] SFTP connection closed.');
+        this.scheduleReconnect();
+      });
+
       this.conn.connect(this.config);
     } catch (err) {
-      console.error('[MinecraftLogBridge] Connect failed:', err.message);
+      console.error('[MinecraftLogBridge] Connect failed:', err ? err.message : 'Unknown');
       this.scheduleReconnect();
     }
   }
 
   scheduleReconnect() {
     if (!this.running) return;
+    this.isChecking = false;
     this.sftp = null;
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
+    if (this.conn) {
+      try { this.conn.destroy(); } catch (e) {}
+      this.conn = null;
+    }
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       this.connect();
     }, 5000);
   }
@@ -90,8 +109,15 @@ class MinecraftLogBridge {
     this.isChecking = true;
 
     try {
-      this.sftp.stat('logs/latest.log', (err, stats) => {
-        if (err) {
+      const activeSftp = this.sftp;
+      if (!activeSftp) {
+        this.isChecking = false;
+        this.scheduleNextCheck();
+        return;
+      }
+
+      activeSftp.stat('logs/latest.log', (statErr, stats) => {
+        if (statErr || !stats || !this.sftp || this.sftp !== activeSftp) {
           this.isChecking = false;
           this.scheduleNextCheck();
           return;
@@ -101,20 +127,29 @@ class MinecraftLogBridge {
         const readLength = Math.min(stats.size, 65536);
         const startPos = Math.max(0, stats.size - readLength);
 
-        this.sftp.open('logs/latest.log', 'r', (err, handle) => {
-          if (err) {
+        activeSftp.open('logs/latest.log', 'r', (openErr, handle) => {
+          if (openErr || !handle || !this.sftp || this.sftp !== activeSftp) {
             this.isChecking = false;
             this.scheduleNextCheck();
             return;
           }
 
           const buffer = Buffer.alloc(readLength);
-          this.sftp.read(handle, buffer, 0, readLength, startPos, (err, bytesRead) => {
-            this.sftp.close(handle, () => {});
+          activeSftp.read(handle, buffer, 0, readLength, startPos, (readErr, bytesRead) => {
+            // Safely close file handle with try/catch and existence guard
+            try {
+              if (activeSftp && handle && typeof activeSftp.close === 'function') {
+                activeSftp.close(handle, () => {});
+              }
+            } catch (closeErr) {}
 
-            if (!err && bytesRead > 0) {
-              const text = buffer.slice(0, bytesRead).toString('utf8');
-              this.parseLogLines(text);
+            try {
+              if (!readErr && bytesRead > 0) {
+                const text = buffer.slice(0, bytesRead).toString('utf8');
+                this.parseLogLines(text);
+              }
+            } catch (parseErr) {
+              console.warn('[MinecraftLogBridge] Error parsing log lines:', parseErr ? parseErr.message : parseErr);
             }
 
             this.isChecking = false;
