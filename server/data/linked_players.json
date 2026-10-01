@@ -26,10 +26,11 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": null,
-    "skinSource": "Default / Mojang",
-    "avatarUrl": "https://mc-heads.net/avatar/Kartikplayzz/128",
-    "skinUrl": "https://mc-heads.net/body/Kartikplayzz/right",
-    "linkedAt": "2026-10-01T19:33:13.952Z"
+    "skinName": "sr-recommendation-green-bird",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-green-bird)",
+    "avatarUrl": "https://mc-heads.net/avatar/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/128",
+    "skinUrl": "https://mc-heads.net/body/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/right",
+    "linkedAt": "2026-10-01T19:33:44.742Z",
+    "lastSkinUpdate": "2026-10-01T19:33:45.033Z"
   }
 ]

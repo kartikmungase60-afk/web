@@ -1,0 +1,15 @@
+mineorange_logo:
+  texture: mineorange/logo
+  ascent: 20
+  height: 24
+  char: ꐔ
+mineorange:
+  texture: mineorange/logo
+  ascent: 20
+  height: 24
+  char: ꐔ
+mineorange_small:
+  texture: mineorange/logo_small
+  ascent: 10
+  height: 12
+  char: ꐕ

@@ -1,0 +1,86 @@
+name:
+  change-interval: 5000
+  texts:
+    - '&#00C1FF&l&nDISCORD&r &8• &e&lSTORE &8• &a&lVOTING &8• #FF0000&lHOSTING'
+    - '&#00C1FF&lDISCORD &8• &e&l&nSTORE&r &8• &a&lVOTING &8• #FF0000&lHOSTING'
+    - '&#00C1FF&lDISCORD &8• &e&lSTORE &8• &a&l&nVOTING&r &8• #FF0000&lHOSTING'
+    - '&#00C1FF&lDISCORD &8• &e&lSTORE &8• &a&lVOTING &8• #FF0000&l&nHOSTING'
+text:
+  change-interval: 5000
+  texts:
+  - '&fJoin our discord server to interact with\n the community, participate in giveaways and events!'
+  - '&fCheck out our webstore to\n buy ranks, crate keys & more!'
+  - '&fVote for our server to\n help us grow and get rewarded!'
+  - '&fWe are looking for volunteers\napply to help us moderate the server\nand keep the community safe!'
+link:
+  change-interval: 5000
+  texts:
+  - '#00C1FF▶ discord.gg/mineorange ◀'
+  - '&e▶ &estore.mineorange.fun ◀'
+  - '&a▶ /vote ◀'
+  - '#FF0000▶ /hosting ◀'
+switcher:
+  change-interval: 500
+  texts:
+  - '&f⬜⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '#00C1FF⬛&f⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '#00C1FF⬛⬛&f⬜⬜⬜⬜⬜⬜⬜'
+  - '#00C1FF⬛⬛⬛&f⬜⬜⬜⬜⬜⬜'
+  - '#00C1FF⬛⬛⬛⬛&f⬜⬜⬜⬜⬜'
+  - '#00C1FF⬛⬛⬛⬛⬛&f⬜⬜⬜⬜'
+  - '#00C1FF⬛⬛⬛⬛⬛⬛&f⬜⬜⬜'
+  - '#00C1FF⬛⬛⬛⬛⬛⬛⬛&f⬜⬜'
+  - '#00C1FF⬛⬛⬛⬛⬛⬛⬛⬛&f⬜'
+  - '#00C1FF⬛⬛⬛⬛⬛⬛⬛⬛⬛&f'
+  - '&f⬜⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '&e⬛&f⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '&e⬛⬛&f⬜⬜⬜⬜⬜⬜⬜'
+  - '&e⬛⬛⬛&f⬜⬜⬜⬜⬜⬜'
+  - '&e⬛⬛⬛⬛&f⬜⬜⬜⬜⬜'
+  - '&e⬛⬛⬛⬛⬛&f⬜⬜⬜⬜'
+  - '&e⬛⬛⬛⬛⬛⬛&f⬜⬜⬜'
+  - '&e⬛⬛⬛⬛⬛⬛⬛&f⬜⬜'
+  - '&e⬛⬛⬛⬛⬛⬛⬛⬛&f⬜'
+  - '&e⬛⬛⬛⬛⬛⬛⬛⬛⬛&f'
+  - '&f⬜⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '&a⬛&f⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '&a⬛⬛&f⬜⬜⬜⬜⬜⬜⬜'
+  - '&a⬛⬛⬛&f⬜⬜⬜⬜⬜⬜'
+  - '&a⬛⬛⬛⬛&f⬜⬜⬜⬜⬜'
+  - '&a⬛⬛⬛⬛⬛&f⬜⬜⬜⬜'
+  - '&a⬛⬛⬛⬛⬛⬛&f⬜⬜⬜'
+  - '&a⬛⬛⬛⬛⬛⬛⬛&f⬜⬜'
+  - '&a⬛⬛⬛⬛⬛⬛⬛⬛&f⬜'
+  - '&a⬛⬛⬛⬛⬛⬛⬛⬛⬛&f'
+  - '&f⬜⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '#FF0000⬛&f⬜⬜⬜⬜⬜⬜⬜⬜'
+  - '#FF0000⬛⬛&f⬜⬜⬜⬜⬜⬜⬜'
+  - '#FF0000⬛⬛⬛&f⬜⬜⬜⬜⬜⬜'
+  - '#FF0000⬛⬛⬛⬛&f⬜⬜⬜⬜⬜'
+  - '#FF0000⬛⬛⬛⬛⬛&f⬜⬜⬜⬜'
+  - '#FF0000⬛⬛⬛⬛⬛⬛&f⬜⬜⬜'
+  - '#FF0000⬛⬛⬛⬛⬛⬛⬛&f⬜⬜'
+  - '#FF0000⬛⬛⬛⬛⬛⬛⬛⬛&f⬜'
+  - '#FF0000⬛⬛⬛⬛⬛⬛⬛⬛⬛&f'
+belowname:
+  change-interval: 6000
+  texts:
+  - '<shadow:#000000FF><sprite:"minecraft:items":item/diamond_sword> #FF2F2F%statistic_player_kills%'
+  - '<shadow:#000000FF><sprite:"minecraft:gui":mob_effect/raid_omen> #E58923%statistic_deaths%'
+  - '<shadow:#000000FF><sprite:"minecraft:items":item/totem_of_undying> #23E5C6%seateams_name%'
+  - '<shadow:#000000FF><sprite:"minecraft:gui":icon/ping_5> Ping: %ping%'
+barcolors:
+  change-interval: 1000
+  texts:
+    - RED
+    - BLUE
+    - GREEN
+    - YELLOW
+logo:
+  change-interval: 3000
+  texts:
+    - '<shadow:#1D0E46FF>:mineorange_logo:'
+logo_small:
+  change-interval: 3000
+  texts:
+    - '<shadow:#1D0E46FF>:mineorange_small:'
