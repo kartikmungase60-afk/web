@@ -383,9 +383,64 @@
         }
       ],
       "transactionId": "TXN-BEYQ036"
+    },
+    {
+      "id": "ORD-MUPKNN05-4W5B",
+      "username": "testplayer",
+      "isBedrock": false,
+      "email": "",
+      "items": [
+        {
+          "productId": "pie-rank",
+          "name": "Pie Rank",
+          "quantity": 1,
+          "unitPriceCents": 499,
+          "lineTotalCents": 499,
+          "rconCommands": [
+            "lp user {player} parent add pie",
+            "broadcast &6&lBATTLEPIE &8» &f{player} &7just unlocked &ePie Rank&7! &6battlepie.net/store"
+          ]
+        }
+      ],
+      "couponCode": "BATTLEPIE",
+      "paymentMethod": "upi",
+      "subtotalCents": 499,
+      "discountCents": 50,
+      "totalCents": 449,
+      "status": "PAID",
+      "createdAt": "2026-10-01T13:30:29.813Z",
+      "paidAt": "2026-10-01T13:30:29.875Z",
+      "deliveredAt": "2026-10-01T13:30:29.880Z",
+      "deliveryLogs": [
+        {
+          "item": "Pie Rank",
+          "commands": [
+            {
+              "command": "lp user testplayer parent add pie",
+              "success": true,
+              "simulated": true,
+              "output": "[Simulated] Executed: lp user testplayer parent add pie"
+            },
+            {
+              "command": "broadcast &6&lBATTLEPIE &8» &ftestplayer &7just unlocked &ePie Rank&7! &6battlepie.net/store",
+              "success": true,
+              "simulated": true,
+              "output": "[Simulated] Executed: broadcast &6&lBATTLEPIE &8» &ftestplayer &7just unlocked &ePie Rank&7! &6battlepie.net/store"
+            }
+          ]
+        }
+      ],
+      "transactionId": "TXN-SZAIHVJ"
     }
   ],
   "recentPayments": [
+    {
+      "id": "ORD-MUPKNN05-4W5B",
+      "username": "testplayer",
+      "packageName": "Pie Rank",
+      "priceUsdCents": 449,
+      "timestamp": 1790861429875
+    },
     {
       "id": "ORD-MUPJNCX9-5QSY",
       "username": "testplayer",

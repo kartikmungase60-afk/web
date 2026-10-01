@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "cleanUrls": true,
   "functions": {
-    "api/index.js": {
+    "api/*.js": {
       "includeFiles": "server/data/**",
       "maxDuration": 15
     }
@@ -11,47 +11,47 @@
   "rewrites": [
     {
       "source": "/api-public/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/api-public/:path*"
     },
     {
       "source": "/api/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/api/:path*"
     },
     {
       "source": "/auth/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/auth/:path*"
     },
     {
       "source": "/skin/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/skin/:path*"
     },
     {
       "source": "/health",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/health"
     },
     {
       "source": "/logout",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/logout"
     },
     {
       "source": "/store/products",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/store/products"
     },
     {
       "source": "/store/cart",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/store/cart"
     },
     {
       "source": "/store/cart/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/store/cart/:path*"
     },
     {
       "source": "/store/order/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/store/order/:path*"
     },
     {
       "source": "/store/coupon/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api?match=/store/coupon/:path*"
     },
     {
       "source": "/store/checkout",

@@ -80,9 +80,14 @@ app.get('/privacy', (req, res) => {
 // Static assets (CSS, JS, and HTML files)
 app.use(express.static(config.paths.publicDir));
 
-// Fallback 404 handler for HTML pages
+// Fallback 404 handler
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(config.paths.publicDir, 'index.html'));
+  const fs = require('fs');
+  const indexPath = path.join(config.paths.publicDir, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.status(404).sendFile(indexPath);
+  }
+  return res.status(404).json({ error: 'Endpoint not found', path: req.url });
 });
 
 // Global error handler
