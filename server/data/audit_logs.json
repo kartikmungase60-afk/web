@@ -1,5 +1,27 @@
 [
   {
+    "id": "log_1790877810250_1p7l",
+    "timestamp": "2026-10-01T18:03:30.250Z",
+    "date": "2026-10-01",
+    "time": "23:33:30",
+    "ip": "::1",
+    "category": "Auth",
+    "action": "ADMIN_LOGIN_SUCCESS",
+    "details": "Staff member authenticated into admin dashboard",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_1790877810237_gc73",
+    "timestamp": "2026-10-01T18:03:30.237Z",
+    "date": "2026-10-01",
+    "time": "23:33:30",
+    "ip": "::1",
+    "category": "Auth",
+    "action": "ADMIN_LOGIN_FAILED",
+    "details": "Failed admin login attempt with user: 'admin'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
     "id": "log_1790876593015_l2vs",
     "timestamp": "2026-10-01T17:43:13.014Z",
     "date": "2026-10-01",

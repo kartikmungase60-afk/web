@@ -68,53 +68,143 @@
   </style>
 </head>
 
-<body class="h-full flex flex-col antialiased" x-data="adminApp()" x-init="init()">
+<body class="h-full flex flex-col antialiased bg-slate-50" x-data="adminApp()" x-init="init()">
 
   <!-- ========================================================================= -->
-  <!-- TOP HEADER BAR (White + Sky Blue Theme) -->
+  <!-- 1. LOADING SCREEN (Checking Admin Session) -->
   <!-- ========================================================================= -->
-  <header class="sticky top-0 z-40 w-full bg-white border-b border-mcsky-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-      
-      <!-- Brand & Minecraft Pixel Title -->
-      <div class="flex items-center gap-3">
-        <a href="index.html" class="flex items-center gap-2.5">
-          <img src="uploads/logo.png?v=transparent" alt="Mine Orange Logo" class="w-9 h-9 object-contain drop-shadow">
-          <div>
-            <span class="font-pixel text-xs text-mcsky-700 tracking-wider">MINE ORANGE</span>
-            <span class="block text-[10px] font-mono text-mcsky-500 font-semibold tracking-widest uppercase">Admin Management Console</span>
-          </div>
-        </a>
-        <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-mcsky-100 text-mcsky-700 border border-mcsky-300 text-[11px] font-bold">
-          v2.4 Live
-        </span>
+  <div x-show="checkingAuth" class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-mcsky-700">
+    <div class="w-12 h-12 border-4 border-mcsky-200 border-t-mcsky-600 rounded-full animate-spin mb-4"></div>
+    <div class="font-pixel text-xs tracking-wider text-slate-700">VERIFYING ADMIN ACCESS...</div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 2. UNAUTHENTICATED: ADMIN LOGIN PORTAL (White + Sky Blue Theme) -->
+  <!-- ========================================================================= -->
+  <div x-show="!checkingAuth && !authenticated" x-cloak class="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12 relative overflow-hidden">
+    <!-- Minecraft Background Dot Grid -->
+    <div class="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(#bae6fd_1px,transparent_1px)] [background-size:24px_24px]"></div>
+
+    <div class="w-full max-w-md bg-white rounded-3xl border-2 border-mcsky-200 shadow-2xl p-8 relative z-10 pixel-box">
+      <!-- Mine Orange Brand Header -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-mcsky-50 border-2 border-mcsky-300 shadow-sm mb-3">
+          <img src="uploads/logo.png?v=transparent" alt="Mine Orange Logo" class="w-10 h-10 object-contain drop-shadow">
+        </div>
+        <div class="font-pixel text-[11px] text-mcsky-700 tracking-wider mb-1">MINE ORANGE NETWORK</div>
+        <h1 class="font-display font-extrabold text-2xl text-slate-900 tracking-tight">Admin Console</h1>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Restricted Staff Access · Authentication Required</p>
       </div>
 
-      <!-- Quick Actions & Links -->
-      <div class="flex items-center gap-3">
-        <a href="store.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold border border-mcsky-200 transition">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-          Live Store
-        </a>
-        <a href="tournaments.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold border border-mcsky-200 transition">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-          Tournaments
-        </a>
+      <!-- Error Alert Banner -->
+      <div x-show="loginError" x-cloak class="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+        <span class="text-base">⚠️</span>
+        <span x-text="loginError" class="font-semibold"></span>
+      </div>
 
-        <!-- Anonymized Protected Session Indicator -->
-        <div class="flex items-center gap-2 pl-3 border-l border-mcsky-200">
-          <div class="w-8 h-8 rounded-full bg-mcsky-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-            🛡️
-          </div>
-          <div class="text-left hidden md:block">
-            <div class="text-xs font-bold text-slate-800">Admin Mode</div>
-            <div class="text-[10px] font-mono text-emerald-600 font-semibold">Protected & Anonymized</div>
+      <!-- Login Form -->
+      <form @submit.prevent="submitLogin()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 font-mono">Username</label>
+          <div class="relative">
+            <input type="text" x-model="loginForm.username" required autofocus placeholder="Admin Username"
+                   class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm font-medium focus:bg-white focus:border-mcsky-500 focus:outline-none transition">
+            <div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">👤</div>
           </div>
         </div>
-      </div>
 
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 font-mono">Password</label>
+            <button type="button" @click="showPassword = !showPassword" class="text-[11px] font-bold text-mcsky-600 hover:text-mcsky-700">
+              <span x-text="showPassword ? 'Hide password' : 'Show password'"></span>
+            </button>
+          </div>
+          <div class="relative">
+            <input :type="showPassword ? 'text' : 'password'" x-model="loginForm.password" required placeholder="Enter admin password"
+                   class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm font-medium focus:bg-white focus:border-mcsky-500 focus:outline-none transition pr-12 font-mono">
+            <div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔒</div>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" :disabled="loginLoading"
+                  class="w-full py-3.5 px-4 rounded-xl bg-mcsky-600 hover:bg-mcsky-500 text-white font-bold text-sm tracking-wide transition shadow-md pixel-box pixel-btn flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
+            <template x-if="loginLoading">
+              <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </template>
+            <span x-text="loginLoading ? 'Authenticating...' : 'Sign In to Dashboard'">Sign In to Dashboard</span>
+            <span x-show="!loginLoading">→</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Security Footnote -->
+      <div class="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <span class="flex items-center gap-1.5 font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          Audit Protected
+        </span>
+        <a href="index.html" class="hover:text-mcsky-600 font-medium transition">Back to Store</a>
+      </div>
     </div>
-  </header>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 3. AUTHENTICATED: FULL ADMIN DASHBOARD -->
+  <!-- ========================================================================= -->
+  <div x-show="!checkingAuth && authenticated" x-cloak class="min-h-full flex flex-col flex-1">
+
+    <!-- TOP HEADER BAR (White + Sky Blue Theme) -->
+    <header class="sticky top-0 z-40 w-full bg-white border-b border-mcsky-200 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        
+        <!-- Brand & Minecraft Pixel Title -->
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="flex items-center gap-2.5">
+            <img src="uploads/logo.png?v=transparent" alt="Mine Orange Logo" class="w-9 h-9 object-contain drop-shadow">
+            <div>
+              <span class="font-pixel text-xs text-mcsky-700 tracking-wider">MINE ORANGE</span>
+              <span class="block text-[10px] font-mono text-mcsky-500 font-semibold tracking-widest uppercase">Admin Management Console</span>
+            </div>
+          </a>
+          <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-mcsky-100 text-mcsky-700 border border-mcsky-300 text-[11px] font-bold">
+            v2.4 Live
+          </span>
+        </div>
+
+        <!-- Quick Actions & Links -->
+        <div class="flex items-center gap-3">
+          <a href="store.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold border border-mcsky-200 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            Live Store
+          </a>
+          <a href="tournaments.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold border border-mcsky-200 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            Tournaments
+          </a>
+
+          <!-- Anonymized Protected Session Indicator -->
+          <div class="flex items-center gap-2 pl-3 border-l border-mcsky-200">
+            <div class="w-8 h-8 rounded-full bg-mcsky-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+              🛡️
+            </div>
+            <div class="text-left hidden md:block">
+              <div class="text-xs font-bold text-slate-800">Admin Mode</div>
+              <div class="text-[10px] font-mono text-emerald-600 font-semibold">Protected & Anonymized</div>
+            </div>
+          </div>
+
+          <!-- Sign Out Admin Button -->
+          <button type="button" @click="logoutAdmin()" title="Logout Admin"
+                  class="ml-1 sm:ml-2 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold border border-rose-200 transition flex items-center gap-1.5 cursor-pointer pixel-btn">
+            <span>🚪</span>
+            <span class="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+
+      </div>
+    </header>
 
   <!-- ========================================================================= -->
   <!-- MAIN WORKSPACE LAYOUT (Category Sidebar + Content Panel) -->
@@ -971,9 +1061,9 @@
             Save Tournament
           </button>
         </div>
-      </form>
     </div>
   </div>
+  </div><!-- End of !checkingAuth && authenticated wrapper -->
 
   <!-- Alpine App Logic -->
   <script>
@@ -1011,6 +1101,14 @@
         passwordLogs: [],
         siteSettings: {},
 
+        // Authentication State
+        authenticated: false,
+        checkingAuth: true,
+        loginForm: { username: 'admin', password: '' },
+        showPassword: false,
+        loginError: '',
+        loginLoading: false,
+
         // Delete Modal
         showDeleteModal: false,
         deleteType: null,
@@ -1028,14 +1126,7 @@
         tourneyForm: { id: '', name: '', bannerImage: '', description: '', isOpen: true },
 
         init() {
-          this.loadOverview();
-          this.loadProducts();
-          this.loadOrders();
-          this.loadApplications();
-          this.loadTournaments();
-          this.loadPlayers();
-          this.loadAuditLogs();
-          this.loadSettings();
+          this.checkAuth();
 
           this.$watch('productSearch', val => {
             if (!val) {
@@ -1048,6 +1139,73 @@
               );
             }
           });
+        },
+
+        checkAuth() {
+          this.checkingAuth = true;
+          fetch('/api/admin/auth/check')
+            .then(r => r.json())
+            .then(d => {
+              this.checkingAuth = false;
+              if (d && d.authenticated) {
+                this.authenticated = true;
+                this.loadAllData();
+              } else {
+                this.authenticated = false;
+              }
+            })
+            .catch(() => {
+              this.checkingAuth = false;
+              this.authenticated = false;
+            });
+        },
+
+        submitLogin() {
+          this.loginLoading = true;
+          this.loginError = '';
+          fetch('/api/admin/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.loginForm)
+          })
+          .then(r => r.json())
+          .then(d => {
+            this.loginLoading = false;
+            if (d && d.success) {
+              this.authenticated = true;
+              this.loginForm.password = '';
+              this.loadAllData();
+            } else {
+              this.loginError = d.error || 'Invalid credentials. Access denied.';
+            }
+          })
+          .catch(e => {
+            this.loginLoading = false;
+            this.loginError = 'Server connection error. Please try again.';
+          });
+        },
+
+        logoutAdmin() {
+          if (!confirm('Are you sure you want to log out of the Admin Console?')) return;
+          fetch('/api/admin/auth/logout', { method: 'POST' })
+            .then(() => {
+              this.authenticated = false;
+              this.loginError = '';
+            })
+            .catch(() => {
+              this.authenticated = false;
+            });
+        },
+
+        loadAllData() {
+          this.loadOverview();
+          this.loadProducts();
+          this.loadOrders();
+          this.loadApplications();
+          this.loadTournaments();
+          this.loadPlayers();
+          this.loadAuditLogs();
+          this.loadSettings();
         },
 
         setCategory(cat, sub) {

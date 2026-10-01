@@ -32,6 +32,13 @@ module.exports = {
     redirectUri: process.env.DISCORD_REDIRECT_URI || 'https://mineorange.fun/auth/discord/callback',
   },
 
+  // Admin Portal Authentication
+  admin: {
+    username: process.env.ADMIN_USERNAME || 'admin',
+    password: process.env.ADMIN_PASSWORD || 'MineOrange@2026!',
+    sessionSecret: process.env.ADMIN_SECRET || 'mineorange_admin_vault_secret_8842',
+  },
+
   // Coupon promo codes
   coupons: {
     'MINEORANGE': { discountPercent: 10, description: '10% off Mine Orange launch discount' },

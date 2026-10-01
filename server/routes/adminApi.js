@@ -7,6 +7,8 @@ const orderStore = require('../services/orderStore');
 const PlayerLinkService = require('../services/playerLinkService');
 const config = require('../config');
 
+const crypto = require('crypto');
+
 // Helper to extract client IP
 function getClientIp(req) {
   let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
@@ -18,6 +20,127 @@ function getClientIp(req) {
   }
   return ip;
 }
+
+// ---------------------------------------------------------------------------
+// ADMIN AUTHENTICATION HELPERS & TOKENS
+// ---------------------------------------------------------------------------
+const ADMIN_SECRET = (config.admin && config.admin.sessionSecret) || 'mineorange_admin_vault_secret_8842';
+const ADMIN_USER = (config.admin && config.admin.username) || process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASS = (config.admin && config.admin.password) || process.env.ADMIN_PASSWORD || 'MineOrange@2026!';
+
+function createAdminToken(user) {
+  const ts = Date.now();
+  const payload = `${user}:${ts}`;
+  const sig = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${sig}`).toString('base64');
+}
+
+function verifyAdminToken(token) {
+  if (!token) return false;
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length !== 3) return false;
+    const [user, tsStr, sig] = parts;
+    const ts = parseInt(tsStr, 10);
+    // Valid for 7 days
+    if (isNaN(ts) || Date.now() - ts > 7 * 24 * 60 * 60 * 1000) return false;
+    const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(`${user}:${tsStr}`).digest('hex');
+    if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+      return true;
+    }
+  } catch (e) {
+    return false;
+  }
+  return false;
+}
+
+// =========================================================================
+// 0. ADMIN AUTHENTICATION ENDPOINTS (Public for Login)
+// =========================================================================
+router.post('/auth/login', (req, res) => {
+  const { username, password } = req.body || {};
+  const cleanUser = (username || '').trim();
+  const cleanPass = (password || '').trim();
+
+  if (cleanUser === ADMIN_USER && cleanPass === ADMIN_PASS) {
+    const token = createAdminToken(cleanUser);
+    res.cookie('mineorange_admin_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    dataManager.addAuditLog({
+      ip: getClientIp(req),
+      category: 'Auth',
+      action: 'ADMIN_LOGIN_SUCCESS',
+      details: 'Staff member authenticated into admin dashboard'
+    });
+
+    return res.json({
+      success: true,
+      authenticated: true,
+      token,
+      message: 'Login successful'
+    });
+  }
+
+  dataManager.addAuditLog({
+    ip: getClientIp(req),
+    category: 'Auth',
+    action: 'ADMIN_LOGIN_FAILED',
+    details: `Failed admin login attempt with user: '${cleanUser || 'anonymous'}'`
+  });
+
+  return res.status(401).json({
+    success: false,
+    authenticated: false,
+    error: 'Invalid admin username or password'
+  });
+});
+
+router.post('/auth/logout', (req, res) => {
+  res.clearCookie('mineorange_admin_token', { path: '/' });
+  dataManager.addAuditLog({
+    ip: getClientIp(req),
+    category: 'Auth',
+    action: 'ADMIN_LOGOUT',
+    details: 'Staff member logged out of admin dashboard'
+  });
+  return res.json({ success: true, authenticated: false, message: 'Logged out successfully' });
+});
+
+router.get('/auth/check', (req, res) => {
+  const token = (req.cookies && req.cookies.mineorange_admin_token) ||
+    (req.headers.authorization ? req.headers.authorization.replace('Bearer ', '').trim() : null);
+  const isValid = verifyAdminToken(token);
+  return res.json({
+    success: true,
+    authenticated: isValid
+  });
+});
+
+// =========================================================================
+// AUTHENTICATION PROTECTION MIDDLEWARE
+// =========================================================================
+// All subsequent /api/admin/* endpoints require valid admin token
+router.use((req, res, next) => {
+  const token = (req.cookies && req.cookies.mineorange_admin_token) ||
+    (req.headers.authorization ? req.headers.authorization.replace('Bearer ', '').trim() : null);
+
+  if (!verifyAdminToken(token)) {
+    return res.status(401).json({
+      success: false,
+      authenticated: false,
+      error: 'Admin authentication required',
+      code: 'UNAUTHORIZED'
+    });
+  }
+
+  next();
+});
 
 // =========================================================================
 // 1. OVERVIEW & STATS
