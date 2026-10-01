@@ -25,6 +25,8 @@ app.use((req, res, next) => {
 
 // API Routes
 app.use('/api-public', require('./routes/publicApi'));
+app.use('/api/public', require('./routes/publicApi'));
+app.use('/api/status', require('./routes/publicApi'));
 app.use('/store', require('./routes/storeApi'));
 app.use('/api/store', require('./routes/storeApi'));
 app.use('/api/webhooks', require('./routes/webhookApi'));
@@ -36,7 +38,7 @@ app.use('/api/auth', require('./routes/authApi'));
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    network: 'Battlepie',
+    network: 'Mine Orange',
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });

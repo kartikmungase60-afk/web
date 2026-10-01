@@ -125,7 +125,7 @@ async function pingMinecraftServer(host = config.minecraft.host, port = config.m
               name: (parsed.version && parsed.version.name) || '1.20.x - 1.21.x',
               protocol: (parsed.version && parsed.version.protocol) || 765
             },
-            motd: parsed.description ? (typeof parsed.description === 'string' ? parsed.description : (parsed.description.text || 'Battlepie Network')) : 'Battlepie Network',
+            motd: parsed.description ? (typeof parsed.description === 'string' ? parsed.description : (parsed.description.text || 'Mine Orange Network')) : 'Mine Orange Network',
             cached: false
           });
         }
@@ -150,7 +150,7 @@ async function pingMinecraftServer(host = config.minecraft.host, port = config.m
           name: '1.20.x - 1.21.x',
           protocol: 765
         },
-        motd: 'Battlepie Network · Lifesteal SMP · Play Now!',
+        motd: 'Mine Orange Network · Lifesteal SMP · Play Now!',
         isFallback: true
       });
     };

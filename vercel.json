@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "server/data/**",
+      "maxDuration": 15
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api-public/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/skin/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/logout",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/store/products",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/store/cart",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/store/cart/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/store/order/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/store/coupon/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/store/checkout",
+      "destination": "/checkout.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/me",
+      "destination": "/me.html"
+    },
+    {
+      "source": "/store",
+      "destination": "/store.html"
+    },
+    {
+      "source": "/checkout",
+      "destination": "/checkout.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    }
+  ]
+}

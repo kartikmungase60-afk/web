@@ -34,16 +34,42 @@ module.exports = {
 
   // Coupon promo codes
   coupons: {
+    'MINEORANGE': { discountPercent: 10, description: '10% off Mine Orange launch discount' },
     'BATTLEPIE': { discountPercent: 10, description: '10% off network launch discount' },
     'VIP20': { discountPercent: 20, description: '20% off special VIP promotion' },
     'SUMMER50': { discountPercent: 50, description: '50% off flash community event' },
   },
 
   // Paths
-  paths: {
-    publicDir: path.join(__dirname, '..'),
-    dataDir: path.join(__dirname, 'data'),
-    ordersFile: path.join(__dirname, 'data', 'orders.json'),
-    productsFile: path.join(__dirname, 'data', 'products.json'),
-  }
+  paths: (() => {
+    const fs = require('fs');
+    const isVercel = !!process.env.VERCEL;
+    const originalDataDir = path.join(__dirname, 'data');
+    const targetDataDir = isVercel ? '/tmp/mineorange_data' : originalDataDir;
+
+    if (isVercel) {
+      try {
+        if (!fs.existsSync(targetDataDir)) {
+          fs.mkdirSync(targetDataDir, { recursive: true });
+        }
+        const seedFiles = ['orders.json', 'products.json', 'sessions.json', 'linked_players.json', 'active_codes.json'];
+        for (const file of seedFiles) {
+          const src = path.join(originalDataDir, file);
+          const dest = path.join(targetDataDir, file);
+          if (fs.existsSync(src) && !fs.existsSync(dest)) {
+            fs.copyFileSync(src, dest);
+          }
+        }
+      } catch (e) {
+        console.warn('[Config] Notice initializing /tmp data directory:', e.message);
+      }
+    }
+
+    return {
+      publicDir: path.join(__dirname, '..'),
+      dataDir: targetDataDir,
+      ordersFile: path.join(targetDataDir, 'orders.json'),
+      productsFile: path.join(targetDataDir, 'products.json'),
+    };
+  })()
 };

@@ -1,7 +1,7 @@
 {
-  "name": "battlepie-network",
+  "name": "mineorange-network",
   "version": "1.0.0",
-  "description": "Full-stack reverse engineered Battlepie Minecraft network portal and store",
+  "description": "Full-stack Mine Orange Minecraft network portal and store",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
@@ -9,13 +9,13 @@
     "test": "node server/test-api.js"
   },
   "keywords": [
-    "battlepie",
+    "mineorange",
     "minecraft",
     "store",
     "rcon",
     "mojang"
   ],
-  "author": "Battlepie Clone",
+  "author": "Mine Orange",
   "license": "MIT",
   "dependencies": {
     "cookie-parser": "^1.4.6",

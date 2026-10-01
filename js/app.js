@@ -82,10 +82,8 @@
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
-      // Try local backend first, fallback to battlepie.net
-      const apiUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-        ? '/api-public/status'
-        : 'https://battlepie.net/api-public/status';
+      // Unified backend API endpoint on same origin (Vercel / Custom Domain / Localhost)
+      const apiUrl = '/api-public/status';
 
       const res = await fetch(apiUrl, {
         signal: controller.signal,
@@ -103,7 +101,7 @@
         }
       }
     } catch (e) {
-      // CORS or network fallback
+      // Network fallback
     }
 
     // High quality live simulation based on reverse-engineered real data
@@ -121,9 +119,7 @@
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
-      const apiUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-        ? '/api-public/discord'
-        : 'https://battlepie.net/api-public/discord';
+      const apiUrl = '/api-public/discord';
 
       const res = await fetch(apiUrl, {
         signal: controller.signal,
