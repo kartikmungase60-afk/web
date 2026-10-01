@@ -80,6 +80,38 @@
     {
       "source": "/privacy",
       "destination": "/privacy.html"
+    },
+    {
+      "source": "/orders",
+      "destination": "/orders.html"
+    },
+    {
+      "source": "/applications",
+      "destination": "/applications.html"
+    },
+    {
+      "source": "/tournaments",
+      "destination": "/tournaments.html"
+    },
+    {
+      "source": "/tournament",
+      "destination": "/tournament.html"
+    },
+    {
+      "source": "/mailbox",
+      "destination": "/mailbox.html"
+    },
+    {
+      "source": "/change-skin",
+      "destination": "/change-skin.html"
+    },
+    {
+      "source": "/change-password",
+      "destination": "/change-password.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
     }
   ]
 }

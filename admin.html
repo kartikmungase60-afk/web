@@ -1,0 +1,1368 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard · Mine Orange</title>
+  <link rel="icon" href="uploads/logo.png?v=transparent">
+
+  <!-- Google Fonts: Inter, Outfit, Press Start 2P -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=Press+Start+2P&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mcsky: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .font-pixel { font-family: 'Press Start 2P', monospace; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    [x-cloak] { display: none !important; }
+    
+    /* Minecraft Pixelated Button & Card Styling */
+    .pixel-box {
+      box-shadow: 3px 3px 0px #0284c7;
+    }
+    .pixel-box-danger {
+      box-shadow: 3px 3px 0px #dc2626;
+    }
+    .pixel-box-emerald {
+      box-shadow: 3px 3px 0px #059669;
+    }
+    .pixel-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px #0284c7;
+    }
+  </style>
+</head>
+
+<body class="h-full flex flex-col antialiased" x-data="adminApp()" x-init="init()">
+
+  <!-- ========================================================================= -->
+  <!-- TOP HEADER BAR (White + Sky Blue Theme) -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-40 w-full bg-white border-b border-mcsky-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Minecraft Pixel Title -->
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="flex items-center gap-2.5">
+          <img src="uploads/logo.png?v=transparent" alt="Mine Orange Logo" class="w-9 h-9 object-contain drop-shadow">
+          <div>
+            <span class="font-pixel text-xs text-mcsky-700 tracking-wider">MINE ORANGE</span>
+            <span class="block text-[10px] font-mono text-mcsky-500 font-semibold tracking-widest uppercase">Admin Management Console</span>
+          </div>
+        </a>
+        <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-mcsky-100 text-mcsky-700 border border-mcsky-300 text-[11px] font-bold">
+          v2.4 Live
+        </span>
+      </div>
+
+      <!-- Quick Actions & Links -->
+      <div class="flex items-center gap-3">
+        <a href="store.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold border border-mcsky-200 transition">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Live Store
+        </a>
+        <a href="tournaments.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold border border-mcsky-200 transition">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Tournaments
+        </a>
+
+        <!-- Anonymized Protected Session Indicator -->
+        <div class="flex items-center gap-2 pl-3 border-l border-mcsky-200">
+          <div class="w-8 h-8 rounded-full bg-mcsky-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+            🛡️
+          </div>
+          <div class="text-left hidden md:block">
+            <div class="text-xs font-bold text-slate-800">Admin Mode</div>
+            <div class="text-[10px] font-mono text-emerald-600 font-semibold">Protected & Anonymized</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE LAYOUT (Category Sidebar + Content Panel) -->
+  <!-- ========================================================================= -->
+  <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col md:flex-row gap-6">
+    
+    <!-- LEFT SIDEBAR: Categories & Subcategories -->
+    <aside class="w-full md:w-64 flex-shrink-0">
+      <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm p-4 sticky top-24">
+        
+        <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-mcsky-600 font-bold mb-3 px-2">
+          CATEGORIES
+        </div>
+
+        <nav class="space-y-1">
+          
+          <!-- Category 1: Overview -->
+          <button type="button" @click="setCategory('overview', 'stats')"
+                  class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold transition"
+                  :class="activeCategory === 'overview' ? 'bg-mcsky-500 text-white shadow-sm' : 'text-slate-700 hover:bg-mcsky-50'">
+            <span class="text-base">📊</span>
+            <span>Dashboard Overview</span>
+          </button>
+
+          <!-- Category 2: Store & Products (with subcategories) -->
+          <div class="pt-2">
+            <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-800 cursor-pointer hover:text-mcsky-600"
+                 @click="toggleGroup('store')">
+              <span class="flex items-center gap-2">
+                <span class="text-base">📦</span>
+                <span>Store & Products</span>
+              </span>
+              <svg class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{ 'rotate-180': openGroups.store }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+            
+            <div x-show="openGroups.store" class="pl-7 space-y-1 mt-1">
+              <button type="button" @click="setCategory('store', 'products')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'products' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                🏷️ All Products
+              </button>
+              <button type="button" @click="setCategory('store', 'ranks')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'ranks' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                🎖️ Ranks & Passes
+              </button>
+              <button type="button" @click="setCategory('store', 'orders')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'orders' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                🧾 Orders & Invoices
+              </button>
+            </div>
+          </div>
+
+          <!-- Category 3: Applications & Submissions -->
+          <div class="pt-2">
+            <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-800 cursor-pointer hover:text-mcsky-600"
+                 @click="toggleGroup('apps')">
+              <span class="flex items-center gap-2">
+                <span class="text-base">📝</span>
+                <span>Applications</span>
+              </span>
+              <svg class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{ 'rotate-180': openGroups.apps }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+            
+            <div x-show="openGroups.apps" class="pl-7 space-y-1 mt-1">
+              <button type="button" @click="setCategory('apps', 'submissions')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'submissions' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                📬 Submissions Review
+              </button>
+              <button type="button" @click="setCategory('apps', 'config')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'config' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                ⚙️ Questions & Forms
+              </button>
+            </div>
+          </div>
+
+          <!-- Category 4: Tournaments & Teams -->
+          <div class="pt-2">
+            <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-800 cursor-pointer hover:text-mcsky-600"
+                 @click="toggleGroup('tourney')">
+              <span class="flex items-center gap-2">
+                <span class="text-base">🏆</span>
+                <span>Tournaments</span>
+              </span>
+              <svg class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{ 'rotate-180': openGroups.tourney }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+            
+            <div x-show="openGroups.tourney" class="pl-7 space-y-1 mt-1">
+              <button type="button" @click="setCategory('tourney', 'events')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'events' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                ⚔️ BedWars Events
+              </button>
+              <button type="button" @click="setCategory('tourney', 'teams')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'teams' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                👥 Registered Teams
+              </button>
+            </div>
+          </div>
+
+          <!-- Category 5: Players & Accounts -->
+          <div class="pt-2">
+            <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-800 cursor-pointer hover:text-mcsky-600"
+                 @click="toggleGroup('players')">
+              <span class="flex items-center gap-2">
+                <span class="text-base">👤</span>
+                <span>Players & Security</span>
+              </span>
+              <svg class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{ 'rotate-180': openGroups.players }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+            
+            <div x-show="openGroups.players" class="pl-7 space-y-1 mt-1">
+              <button type="button" @click="setCategory('players', 'linked')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'linked' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                🔗 Linked Accounts
+              </button>
+              <button type="button" @click="setCategory('players', 'passwords')"
+                      class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      :class="activeSub === 'passwords' ? 'bg-mcsky-100 text-mcsky-800 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+                🔑 Password Logs
+              </button>
+            </div>
+          </div>
+
+          <!-- Category 6: Website Settings -->
+          <div class="pt-2">
+            <button type="button" @click="setCategory('settings', 'site')"
+                    class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold transition"
+                    :class="activeCategory === 'settings' ? 'bg-mcsky-500 text-white shadow-sm' : 'text-slate-700 hover:bg-mcsky-50'">
+              <span class="text-base">🌐</span>
+              <span>Website & Server</span>
+            </button>
+          </div>
+
+          <!-- Category 7: Audit Logs (MANDATORY REQUIREMENTS) -->
+          <div class="pt-2">
+            <button type="button" @click="setCategory('logs', 'audit')"
+                    class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold transition border border-mcsky-300"
+                    :class="activeCategory === 'logs' ? 'bg-mcsky-600 text-white shadow-sm' : 'bg-mcsky-50 text-mcsky-800 hover:bg-mcsky-100'">
+              <span class="text-base">📜</span>
+              <span>Audit Change Logs</span>
+            </button>
+          </div>
+
+        </nav>
+
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN PANEL -->
+    <main class="flex-1 min-w-0">
+
+      <!-- ===================================================================== -->
+      <!-- 1. OVERVIEW PANEL -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'overview'">
+        <div class="space-y-6">
+          
+          <!-- Banner -->
+          <div class="p-6 rounded-2xl bg-gradient-to-r from-mcsky-500 to-mcsky-600 text-white shadow-md relative overflow-hidden">
+            <div class="relative z-10">
+              <span class="text-[11px] font-mono uppercase tracking-[0.2em] text-mcsky-100 font-semibold">MINE ORANGE NETWORK</span>
+              <h1 class="font-display font-bold text-2xl sm:text-3xl tracking-tight mt-1">Admin Control Center</h1>
+              <p class="text-xs sm:text-sm text-mcsky-100 mt-1 max-w-xl">
+                Manage your store catalog, approve staff applications, host tournaments, and monitor player security in real-time.
+              </p>
+            </div>
+            <div class="absolute right-4 bottom-2 text-7xl opacity-20 pointer-events-none">⛏️</div>
+          </div>
+
+          <!-- Stat Cards Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="p-5 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+              <div class="text-xs font-semibold text-slate-500 mb-1">Total Products</div>
+              <div class="font-display font-bold text-2xl text-slate-900" x-text="stats.totalProducts">0</div>
+              <div class="text-[11px] text-mcsky-600 mt-1">Active in store</div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+              <div class="text-xs font-semibold text-slate-500 mb-1">Paid Orders</div>
+              <div class="font-display font-bold text-2xl text-emerald-600" x-text="stats.paidOrders">0</div>
+              <div class="text-[11px] text-slate-500 mt-1" x-text="'Total: ' + stats.totalRevenue">$0.00</div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+              <div class="text-xs font-semibold text-slate-500 mb-1">Tournaments</div>
+              <div class="font-display font-bold text-2xl text-mcsky-600" x-text="stats.activeTournaments">0</div>
+              <div class="text-[11px] text-slate-500 mt-1" x-text="stats.registeredTeams + ' Teams registered'">0 Teams</div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+              <div class="text-xs font-semibold text-slate-500 mb-1">Linked Players</div>
+              <div class="font-display font-bold text-2xl text-amber-600" x-text="stats.linkedPlayers">0</div>
+              <div class="text-[11px] text-slate-500 mt-1">Verified Minecraft IDs</div>
+            </div>
+          </div>
+
+          <!-- Recent Audit Logs Preview -->
+          <div class="p-6 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-display font-bold text-lg text-slate-900">Recent Activity Logs</h2>
+              <button type="button" @click="setCategory('logs', 'audit')" class="text-xs font-bold text-mcsky-600 hover:text-mcsky-700">
+                View All Logs →
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-slate-100 text-slate-400 font-mono uppercase tracking-wider text-[10px]">
+                    <th class="pb-2.5">Date & Time</th>
+                    <th class="pb-2.5">Client IP</th>
+                    <th class="pb-2.5">Category</th>
+                    <th class="pb-2.5">Action Details</th>
+                    <th class="pb-2.5">Admin Account</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <template x-for="log in recentLogs" :key="log.id">
+                    <tr class="hover:bg-slate-50/70 transition">
+                      <td class="py-2.5 font-mono text-slate-600" x-text="log.date + ' ' + log.time"></td>
+                      <td class="py-2.5 font-mono font-semibold text-mcsky-700" x-text="log.ip"></td>
+                      <td class="py-2.5 font-semibold text-slate-700" x-text="log.category"></td>
+                      <td class="py-2.5 text-slate-600" x-text="log.details"></td>
+                      <!-- Strictly hidden as instructed -->
+                      <td class="py-2.5 font-mono text-slate-400">
+                        <span class="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-600 border border-slate-200" x-text="log.adminAccount"></span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 2. STORE PRODUCTS & RANKS PANEL -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'store' && (activeSub === 'products' || activeSub === 'ranks')">
+        <div class="space-y-6">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Store Products</h1>
+              <p class="text-xs text-slate-500">Manage ranks, coin bundles, and store perks. Any update here reflects on the live store immediately.</p>
+            </div>
+            <button type="button" @click="openProductModal()"
+                    class="px-4 py-2.5 rounded-xl bg-mcsky-500 hover:bg-mcsky-600 text-white text-xs font-bold transition flex items-center gap-2 pixel-btn pixel-box">
+              <span>+ Add New Product</span>
+            </button>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="flex items-center gap-3">
+            <input type="text" x-model="productSearch" placeholder="Search products by title or category..."
+                   class="w-full sm:w-80 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-mcsky-500">
+          </div>
+
+          <!-- Products Table -->
+          <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-mcsky-50/70 border-b border-mcsky-100 text-mcsky-800 font-semibold uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th class="py-3 px-4">Item</th>
+                    <th class="py-3 px-4">Category</th>
+                    <th class="py-3 px-4">Price</th>
+                    <th class="py-3 px-4">Perks</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <template x-for="p in filteredProducts" :key="p.id">
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                          <img :src="p.imageUrl" class="w-8 h-8 rounded-lg object-contain bg-slate-100 border border-slate-200 p-0.5">
+                          <div>
+                            <div class="font-bold text-slate-900" x-text="p.name"></div>
+                            <div class="text-[10px] text-slate-400 font-mono" x-text="p.id"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                              :class="p.category === 'ranks' ? 'bg-amber-100 text-amber-800' : 'bg-mcsky-100 text-mcsky-800'"
+                              x-text="p.category"></span>
+                      </td>
+                      <td class="py-3 px-4 font-mono font-bold text-slate-800" x-text="'$' + (p.priceUsdCents / 100).toFixed(2)"></td>
+                      <td class="py-3 px-4 text-slate-500 text-[11px]" x-text="(p.perks || []).length + ' perks listed'"></td>
+                      <td class="py-3 px-4 text-right space-x-2">
+                        <button type="button" @click="editProduct(p)" class="px-2.5 py-1 rounded-lg bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 font-bold transition">
+                          Edit
+                        </button>
+                        <!-- Delete Confirmation Trigger -->
+                        <button type="button" @click="confirmDelete('product', p.id, p.name)" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold transition">
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 3. ORDERS PANEL -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'store' && activeSub === 'orders'">
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Orders & Invoices</h1>
+              <p class="text-xs text-slate-500">View and update customer purchase fulfillment in real-time.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" @click="loadOrders()" class="px-3 py-1.5 rounded-xl bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold transition">
+                ↻ Refresh Orders
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-mcsky-50/70 border-b border-mcsky-100 text-mcsky-800 font-semibold uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th class="py-3 px-4">Order ID</th>
+                    <th class="py-3 px-4">Player</th>
+                    <th class="py-3 px-4">Items</th>
+                    <th class="py-3 px-4">Total</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <template x-for="ord in ordersList" :key="ord.id">
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="py-3 px-4 font-mono font-bold text-slate-700" x-text="ord.id"></td>
+                      <td class="py-3 px-4">
+                        <div class="flex items-center gap-2">
+                          <img :src="'https://mc-heads.net/avatar/' + encodeURIComponent(ord.username) + '/24'" class="w-5 h-5 rounded">
+                          <span class="font-bold text-slate-900" x-text="ord.username"></span>
+                        </div>
+                      </td>
+                      <td class="py-3 px-4 text-slate-600">
+                        <template x-for="it in (ord.items || [])" :key="it.name">
+                          <div x-text="it.name"></div>
+                        </template>
+                      </td>
+                      <td class="py-3 px-4 font-mono font-bold text-slate-800" x-text="'$' + ((ord.totalCents || 0) / 100).toFixed(2)"></td>
+                      <td class="py-3 px-4">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                              :class="ord.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                              x-text="ord.status"></span>
+                      </td>
+                      <td class="py-3 px-4 text-right space-x-1">
+                        <template x-if="ord.status !== 'PAID'">
+                          <button type="button" @click="setOrderStatus(ord.id, 'PAID')" class="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold transition text-[11px]">
+                            Mark Paid
+                          </button>
+                        </template>
+                        <template x-if="ord.status === 'PAID'">
+                          <button type="button" @click="setOrderStatus(ord.id, 'REFUNDED')" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition text-[11px]">
+                            Refund
+                          </button>
+                        </template>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 4. APPLICATIONS PANEL (Submissions & Questions) -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'apps'">
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Applications Review</h1>
+              <p class="text-xs text-slate-500">Review Discord and Minecraft staff submissions, update questions, and toggle status.</p>
+            </div>
+          </div>
+
+          <!-- Submissions Review List -->
+          <div class="space-y-4">
+            <template x-for="sub in applicationsList" :key="sub.id">
+              <div class="p-6 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <span class="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-wider uppercase bg-mcsky-100 text-mcsky-800" x-text="sub.appTitle"></span>
+                    <h3 class="font-display font-bold text-lg text-slate-900 mt-1" x-text="'Applicant: ' + sub.applicant"></h3>
+                    <div class="text-[11px] text-slate-400 font-mono" x-text="'ID: ' + sub.id + ' · Submitted: ' + new Date(sub.submittedAt).toLocaleString()"></div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                          :class="sub.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : (sub.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')"
+                          x-text="sub.status"></span>
+                    
+                    <button type="button" @click="reviewSubmission(sub.id, 'APPROVED')" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition">
+                      Approve
+                    </button>
+                    <button type="button" @click="reviewSubmission(sub.id, 'REJECTED')" class="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs transition">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Answers Accordion / Details -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2 text-xs">
+                  <template x-for="(val, qKey) in sub.answers" :key="qKey">
+                    <div class="border-b border-slate-200/60 pb-1.5 last:border-0">
+                      <span class="font-mono text-mcsky-700 font-bold" x-text="qKey + ': '"></span>
+                      <span class="text-slate-800 font-medium" x-text="val"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 5. TOURNAMENTS PANEL -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'tourney'">
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Tournaments Management</h1>
+              <p class="text-xs text-slate-500">Configure BedWars tournaments, toggle team registration, and approve squads.</p>
+            </div>
+            <button type="button" @click="openTourneyModal()"
+                    class="px-4 py-2.5 rounded-xl bg-mcsky-500 hover:bg-mcsky-600 text-white text-xs font-bold transition pixel-btn pixel-box">
+              + New Tournament
+            </button>
+          </div>
+
+          <div class="space-y-6">
+            <template x-for="t in tournamentsList" :key="t.id">
+              <div class="p-6 rounded-2xl bg-white border border-mcsky-200 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <h3 class="font-pixel text-base text-slate-900" x-text="t.name">BEDWARS TOURNAMENT</h3>
+                    <div class="flex items-center gap-3 mt-1.5">
+                      <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase"
+                            :class="t.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                            x-text="t.isOpen ? 'Registration Open' : 'Registration Closed'"></span>
+                      <span class="text-xs text-slate-500" x-text="(t.teams || []).length + ' / ' + t.maxTeams + ' Teams registered'"></span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button type="button" @click="toggleTourneyStatus(t)"
+                            class="px-3 py-1.5 rounded-xl border text-xs font-bold transition"
+                            :class="t.isOpen ? 'border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100' : 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'"
+                            x-text="t.isOpen ? 'Close Registration' : 'Open Registration'">
+                    </button>
+                    <button type="button" @click="editTourney(t)" class="px-3 py-1.5 rounded-xl bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 font-bold text-xs transition">
+                      Edit
+                    </button>
+                    <!-- Delete Confirmation Trigger -->
+                    <button type="button" @click="confirmDelete('tournament', t.id, t.name)" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Teams list in this tournament -->
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                  <div class="text-xs font-bold text-slate-700 mb-2">Registered Teams:</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <template x-for="tm in (t.teams || [])" :key="tm.id">
+                      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                        <div>
+                          <div class="font-bold text-slate-900 text-xs" x-text="tm.name"></div>
+                          <div class="text-[11px] text-slate-500" x-text="'Leader: ' + tm.leader + ' (' + (tm.players || []).length + ' players)'"></div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                              :class="tm.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                              x-text="tm.status"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+              </div>
+            </template>
+          </div>
+
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 6. PLAYERS & PASSWORDS PANEL -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'players'">
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Players & Security</h1>
+              <p class="text-xs text-slate-500">Monitor linked player accounts, reset custom skins, and audit password change logs.</p>
+            </div>
+          </div>
+
+          <!-- Linked Players Table -->
+          <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-mcsky-100 font-bold text-slate-900 text-sm">
+              Linked Minecraft Accounts
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-mcsky-50 text-mcsky-800 font-semibold uppercase text-[10px]">
+                  <tr>
+                    <th class="py-3 px-4">Minecraft Player</th>
+                    <th class="py-3 px-4">Account Type</th>
+                    <th class="py-3 px-4">Discord ID</th>
+                    <th class="py-3 px-4">Skin</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <template x-for="pl in playersList" :key="pl.discordId">
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="py-3 px-4">
+                        <div class="flex items-center gap-2">
+                          <img :src="'https://mc-heads.net/avatar/' + encodeURIComponent(pl.minecraftUsername) + '/24'" class="w-6 h-6 rounded">
+                          <span class="font-bold text-slate-900" x-text="pl.minecraftUsername"></span>
+                        </div>
+                      </td>
+                      <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-800" x-text="pl.accountType || 'CRACKED'"></span>
+                      </td>
+                      <td class="py-3 px-4 font-mono text-slate-500" x-text="pl.discordUsername || pl.discordId"></td>
+                      <td class="py-3 px-4">
+                        <span class="text-[11px] text-mcsky-600 font-semibold" x-text="pl.skinUrl ? 'Custom Skin' : 'Default Steve'"></span>
+                      </td>
+                      <td class="py-3 px-4 text-right space-x-1">
+                        <button type="button" @click="resetPlayerSkin(pl.minecraftUsername)" class="px-2.5 py-1 rounded bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 font-bold text-[11px] transition">
+                          Reset Skin
+                        </button>
+                        <button type="button" @click="confirmDelete('player', pl.discordId, pl.minecraftUsername)" class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] transition">
+                          Unlink
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Password Logs Table -->
+          <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-mcsky-100 font-bold text-slate-900 text-sm">
+              In-Game Password Change Audit Logs
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-mcsky-50 text-mcsky-800 font-semibold uppercase text-[10px]">
+                  <tr>
+                    <th class="py-3 px-4">Date & Time</th>
+                    <th class="py-3 px-4">Player</th>
+                    <th class="py-3 px-4">Client IP</th>
+                    <th class="py-3 px-4">Stated Reason</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <template x-for="pwd in passwordLogs" :key="pwd.id">
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="py-3 px-4 font-mono text-slate-600" x-text="new Date(pwd.timestamp).toLocaleString()"></td>
+                      <td class="py-3 px-4 font-bold text-slate-900" x-text="pwd.username"></td>
+                      <td class="py-3 px-4 font-mono text-mcsky-700 font-semibold" x-text="pwd.ip"></td>
+                      <td class="py-3 px-4 text-slate-600 italic" x-text="pwd.reason || 'None provided'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 7. SETTINGS PANEL -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'settings'">
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Website & Server Settings</h1>
+              <p class="text-xs text-slate-500">Configure global announcements, server connection IP, and simulated player boosts.</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm p-6 space-y-5">
+            <form @submit.prevent="saveSiteSettings()" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Server Connect IP</label>
+                <input type="text" x-model="siteSettings.serverIp" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Discord Invite URL</label>
+                <input type="text" x-model="siteSettings.discordInvite" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Top Announcement Banner Text</label>
+                <input type="text" x-model="siteSettings.bannerText" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs">
+              </div>
+
+              <div class="flex items-center gap-3 pt-2">
+                <input type="checkbox" id="bannerEnabled" x-model="siteSettings.bannerEnabled" class="rounded text-mcsky-500">
+                <label for="bannerEnabled" class="text-xs font-semibold text-slate-700">Display announcement banner across website</label>
+              </div>
+
+              <div class="pt-4">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-mcsky-500 hover:bg-mcsky-600 text-white font-bold text-xs transition pixel-btn pixel-box">
+                  Save Changes Real-Time
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===================================================================== -->
+      <!-- 8. AUDIT LOGS PANEL (MANDATORY SPEC COMPLIANCE) -->
+      <!-- ===================================================================== -->
+      <template x-if="activeCategory === 'logs'">
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900">Admin Audit Logs</h1>
+              <p class="text-xs text-slate-500">Every change records exact Date, Time, and Client IP. Admin account identity is strictly protected.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" @click="loadAuditLogs()" class="px-3 py-1.5 rounded-xl bg-mcsky-50 hover:bg-mcsky-100 text-mcsky-700 text-xs font-semibold transition">
+                ↻ Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-mcsky-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-mcsky-50 border-b border-mcsky-100 text-mcsky-800 font-mono uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th class="py-3 px-4">Date</th>
+                    <th class="py-3 px-4">Time</th>
+                    <th class="py-3 px-4">Client IP</th>
+                    <th class="py-3 px-4">Category</th>
+                    <th class="py-3 px-4">Action</th>
+                    <th class="py-3 px-4">Details</th>
+                    <th class="py-3 px-4">Admin Account</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-sans">
+                  <template x-for="log in fullLogs" :key="log.id">
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="py-3 px-4 font-mono font-semibold text-slate-700" x-text="log.date"></td>
+                      <td class="py-3 px-4 font-mono text-slate-600" x-text="log.time"></td>
+                      <td class="py-3 px-4 font-mono font-bold text-mcsky-600" x-text="log.ip"></td>
+                      <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded font-bold text-[10px] uppercase bg-slate-100 text-slate-700" x-text="log.category"></span>
+                      </td>
+                      <td class="py-3 px-4 font-mono font-bold text-slate-800 text-[11px]" x-text="log.action"></td>
+                      <td class="py-3 px-4 text-slate-600" x-text="log.details"></td>
+                      <!-- STRICTLY HIDES WHICH ADMIN ACCOUNT PER USER SPEC -->
+                      <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded bg-slate-100 border border-slate-200 font-mono text-[10px] font-bold text-slate-500" x-text="log.adminAccount">
+                          [Protected Admin]
+                        </span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </main>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- DELETE CONFIRMATION MODAL ("delete conform" per user instruction) -->
+  <!-- ========================================================================= -->
+  <div x-show="showDeleteModal" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div @click.outside="showDeleteModal = false"
+         class="w-full max-w-md bg-white rounded-2xl border-2 border-rose-500 shadow-2xl p-6 relative pixel-box-danger">
+      
+      <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl mb-4">
+        ⚠️
+      </div>
+
+      <h3 class="font-display font-bold text-xl text-slate-900 mb-1">Confirm Deletion</h3>
+      <p class="text-xs text-slate-600 mb-6 leading-relaxed">
+        Are you sure you want to delete <span class="font-bold text-slate-900" x-text="deleteTargetName"></span>?
+        <br><span class="text-rose-600 font-medium">This action will immediately reflect on the live Mine Orange website.</span>
+      </p>
+
+      <div class="flex items-center justify-end gap-3">
+        <button type="button" @click="showDeleteModal = false"
+                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+          Cancel
+        </button>
+        <button type="button" @click="executeDelete()"
+                class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition pixel-btn pixel-box-danger">
+          Yes, Confirm Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PRODUCT ADD/EDIT MODAL (With Real-Time Image Upload) -->
+  <!-- ========================================================================= -->
+  <div x-show="showProductModal" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+    <div @click.outside="showProductModal = false"
+         class="w-full max-w-xl bg-white rounded-2xl border-2 border-mcsky-400 shadow-2xl p-6 sm:p-7 my-8 relative pixel-box">
+      
+      <h3 class="font-display font-bold text-xl text-slate-900 mb-4" x-text="isEditingProduct ? 'Edit Product' : 'Add New Product'"></h3>
+
+      <form @submit.prevent="saveProduct()" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Product Title</label>
+          <input type="text" x-model="productForm.name" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Category</label>
+            <select x-model="productForm.category" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white">
+              <option value="ranks">Ranks</option>
+              <option value="lifesteal">Lifesteal Coins</option>
+              <option value="items">Items & Keys</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Price in Cents (e.g. 999 = $9.99)</label>
+            <input type="number" x-model="productForm.priceUsdCents" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Product Icon / Image (URL or Upload)</label>
+          <div class="flex gap-2">
+            <input type="text" x-model="productForm.imageUrl" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs">
+            <button type="button" @click="$refs.productImgUpload.click()" class="px-3 py-2 rounded-xl bg-mcsky-100 hover:bg-mcsky-200 text-mcsky-800 font-bold text-xs transition">
+              Upload...
+            </button>
+            <input type="file" x-ref="productImgUpload" @change="uploadImage($event, 'product')" accept="image/*" class="hidden">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Description</label>
+          <textarea x-model="productForm.description" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Perks (One per line)</label>
+          <textarea x-model="productForm.perksText" rows="3" placeholder="[VIP] Chat Prefix&#10;/fly in Lobby&#10;3 Vaults" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" @click="showProductModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-mcsky-500 hover:bg-mcsky-600 text-white font-bold pixel-btn pixel-box">
+            Save Product Real-Time
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TOURNAMENT ADD/EDIT MODAL -->
+  <!-- ========================================================================= -->
+  <div x-show="showTourneyModal" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+    <div @click.outside="showTourneyModal = false"
+         class="w-full max-w-xl bg-white rounded-2xl border-2 border-mcsky-400 shadow-2xl p-6 my-8 relative pixel-box">
+      
+      <h3 class="font-display font-bold text-xl text-slate-900 mb-4" x-text="isEditingTourney ? 'Edit Tournament' : 'New Tournament'"></h3>
+
+      <form @submit.prevent="saveTournament()" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tournament Name</label>
+          <input type="text" x-model="tourneyForm.name" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Banner Image URL or Upload</label>
+          <div class="flex gap-2">
+            <input type="text" x-model="tourneyForm.bannerImage" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs">
+            <button type="button" @click="$refs.tourneyImgUpload.click()" class="px-3 py-2 rounded-xl bg-mcsky-100 hover:bg-mcsky-200 text-mcsky-800 font-bold text-xs transition">
+              Upload...
+            </button>
+            <input type="file" x-ref="tourneyImgUpload" @change="uploadImage($event, 'tourney')" accept="image/*" class="hidden">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Description</label>
+          <textarea x-model="tourneyForm.description" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"></textarea>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input type="checkbox" id="tourneyOpen" x-model="tourneyForm.isOpen" class="rounded text-mcsky-500">
+          <label for="tourneyOpen" class="font-bold text-slate-700">Open for Team Registration</label>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" @click="showTourneyModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-mcsky-500 hover:bg-mcsky-600 text-white font-bold pixel-btn pixel-box">
+            Save Tournament
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Alpine App Logic -->
+  <script>
+    function adminApp() {
+      return {
+        activeCategory: 'overview',
+        activeSub: 'stats',
+        openGroups: {
+          store: true,
+          apps: true,
+          tourney: true,
+          players: true
+        },
+
+        stats: {
+          totalProducts: 0,
+          totalOrders: 0,
+          paidOrders: 0,
+          totalRevenue: '$0.00',
+          totalApplications: 0,
+          activeTournaments: 0,
+          registeredTeams: 0,
+          linkedPlayers: 0
+        },
+
+        recentLogs: [],
+        fullLogs: [],
+        productsList: [],
+        filteredProducts: [],
+        productSearch: '',
+        ordersList: [],
+        applicationsList: [],
+        tournamentsList: [],
+        playersList: [],
+        passwordLogs: [],
+        siteSettings: {},
+
+        // Delete Modal
+        showDeleteModal: false,
+        deleteType: null,
+        deleteTargetId: null,
+        deleteTargetName: '',
+
+        // Product Modal
+        showProductModal: false,
+        isEditingProduct: false,
+        productForm: { id: '', name: '', category: 'ranks', priceUsdCents: 499, imageUrl: '', description: '', perksText: '' },
+
+        // Tournament Modal
+        showTourneyModal: false,
+        isEditingTourney: false,
+        tourneyForm: { id: '', name: '', bannerImage: '', description: '', isOpen: true },
+
+        init() {
+          this.loadOverview();
+          this.loadProducts();
+          this.loadOrders();
+          this.loadApplications();
+          this.loadTournaments();
+          this.loadPlayers();
+          this.loadAuditLogs();
+          this.loadSettings();
+
+          this.$watch('productSearch', val => {
+            if (!val) {
+              this.filteredProducts = this.productsList;
+            } else {
+              const q = val.toLowerCase();
+              this.filteredProducts = this.productsList.filter(p =>
+                (p.name && p.name.toLowerCase().includes(q)) ||
+                (p.category && p.category.toLowerCase().includes(q))
+              );
+            }
+          });
+        },
+
+        setCategory(cat, sub) {
+          this.activeCategory = cat;
+          this.activeSub = sub;
+          if (cat === 'logs') this.loadAuditLogs();
+          if (cat === 'store') this.loadProducts();
+        },
+
+        toggleGroup(grp) {
+          this.openGroups[grp] = !this.openGroups[grp];
+        },
+
+        loadOverview() {
+          fetch('/api/admin/overview')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.success) {
+                this.stats = d.stats;
+                this.recentLogs = d.recentLogs || [];
+              }
+            })
+            .catch(() => {});
+        },
+
+        loadProducts() {
+          fetch('/api/admin/products')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.products) {
+                this.productsList = d.products;
+                this.filteredProducts = d.products;
+              }
+            })
+            .catch(() => {});
+        },
+
+        loadOrders() {
+          fetch('/api/admin/orders')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.orders) this.ordersList = d.orders;
+            })
+            .catch(() => {});
+        },
+
+        setOrderStatus(id, status) {
+          fetch(`/api/admin/orders/${id}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              this.loadOrders();
+              this.loadOverview();
+              alert(`Order ${id} status changed to ${status}`);
+            }
+          })
+          .catch(() => {});
+        },
+
+        loadApplications() {
+          fetch('/api/admin/applications/submissions')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.submissions) this.applicationsList = d.submissions;
+            })
+            .catch(() => {});
+        },
+
+        reviewSubmission(id, status) {
+          fetch(`/api/admin/applications/submissions/${id}/review`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              this.loadApplications();
+              alert(`Submission marked as ${status}`);
+            }
+          })
+          .catch(() => {});
+        },
+
+        loadTournaments() {
+          fetch('/api/admin/tournaments')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.tournaments) this.tournamentsList = d.tournaments;
+            })
+            .catch(() => {});
+        },
+
+        toggleTourneyStatus(t) {
+          fetch(`/api/admin/tournaments/${t.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isOpen: !t.isOpen })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) this.loadTournaments();
+          })
+          .catch(() => {});
+        },
+
+        loadPlayers() {
+          fetch('/api/admin/players')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.players) this.playersList = d.players;
+            })
+            .catch(() => {});
+
+          fetch('/api/admin/passwords')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.logs) this.passwordLogs = d.logs;
+            })
+            .catch(() => {});
+        },
+
+        resetPlayerSkin(username) {
+          if (!confirm(`Reset custom skin for ${username}?`)) return;
+          fetch(`/api/admin/players/${username}/reset-skin`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+              alert(d.message || 'Skin reset to default Steve model');
+              this.loadPlayers();
+            })
+            .catch(() => {});
+        },
+
+        loadSettings() {
+          fetch('/api/admin/settings')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.settings) this.siteSettings = d.settings;
+            })
+            .catch(() => {});
+        },
+
+        saveSiteSettings() {
+          fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.siteSettings)
+          })
+          .then(r => r.json())
+          .then(d => {
+            alert('Settings updated across the website!');
+          })
+          .catch(() => {});
+        },
+
+        loadAuditLogs() {
+          fetch('/api/admin/audit-logs')
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.logs) this.fullLogs = d.logs;
+            })
+            .catch(() => {});
+        },
+
+        // Confirmation Modal Logic ("delete conform")
+        confirmDelete(type, id, name) {
+          this.deleteType = type;
+          this.deleteTargetId = id;
+          this.deleteTargetName = name;
+          this.showDeleteModal = true;
+        },
+
+        executeDelete() {
+          const type = this.deleteType;
+          const id = this.deleteTargetId;
+
+          let url = '';
+          if (type === 'product') url = `/api/admin/products/${id}`;
+          if (type === 'tournament') url = `/api/admin/tournaments/${id}`;
+          if (type === 'player') url = `/api/admin/players/${id}`;
+
+          fetch(url, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(d => {
+              this.showDeleteModal = false;
+              alert(d.message || 'Deleted successfully');
+              if (type === 'product') this.loadProducts();
+              if (type === 'tournament') this.loadTournaments();
+              if (type === 'player') this.loadPlayers();
+              this.loadOverview();
+            })
+            .catch(e => {
+              alert('Delete error: ' + e.message);
+            });
+        },
+
+        // Upload Real-Time helper
+        uploadImage(event, target) {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const base64Data = e.target.result;
+            fetch('/api/admin/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename: file.name, base64Data })
+            })
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.url) {
+                if (target === 'product') this.productForm.imageUrl = d.url;
+                if (target === 'tourney') this.tourneyForm.bannerImage = d.url;
+                alert('Image uploaded and synced!');
+              }
+            })
+            .catch(() => {});
+          };
+          reader.readAsDataURL(file);
+        },
+
+        // Product Modal Save
+        openProductModal() {
+          this.isEditingProduct = false;
+          this.productForm = { id: '', name: '', category: 'ranks', priceUsdCents: 499, imageUrl: '', description: '', perksText: '' };
+          this.showProductModal = true;
+        },
+
+        editProduct(p) {
+          this.isEditingProduct = true;
+          this.productForm = {
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            priceUsdCents: p.priceUsdCents,
+            imageUrl: p.imageUrl,
+            description: p.description,
+            perksText: (p.perks || []).join('\n')
+          };
+          this.showProductModal = true;
+        },
+
+        saveProduct() {
+          const payload = {
+            ...this.productForm,
+            perks: this.productForm.perksText.split('\n').map(s => s.trim()).filter(Boolean)
+          };
+
+          const method = this.isEditingProduct ? 'PUT' : 'POST';
+          const url = this.isEditingProduct ? `/api/admin/products/${this.productForm.id}` : '/api/admin/products';
+
+          fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              this.showProductModal = false;
+              this.loadProducts();
+              this.loadOverview();
+              alert('Product saved and live on store!');
+            }
+          })
+          .catch(() => {});
+        },
+
+        // Tournament Modal Save
+        openTourneyModal() {
+          this.isEditingTourney = false;
+          this.tourneyForm = { id: '', name: '', bannerImage: '', description: '', isOpen: true };
+          this.showTourneyModal = true;
+        },
+
+        editTourney(t) {
+          this.isEditingTourney = true;
+          this.tourneyForm = {
+            id: t.id,
+            name: t.name,
+            bannerImage: t.bannerImage,
+            description: t.description,
+            isOpen: t.isOpen
+          };
+          this.showTourneyModal = true;
+        },
+
+        saveTournament() {
+          const method = this.isEditingTourney ? 'PUT' : 'POST';
+          const url = this.isEditingTourney ? `/api/admin/tournaments/${this.tourneyForm.id}` : '/api/admin/tournaments';
+
+          fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.tourneyForm)
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              this.showTourneyModal = false;
+              this.loadTournaments();
+              this.loadOverview();
+              alert('Tournament updated and live on website!');
+            }
+          })
+          .catch(() => {});
+        }
+      };
+    }
+  </script>
+
+</body>
+</html>

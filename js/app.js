@@ -246,19 +246,20 @@
             </button>
             <div id="${dropdownId}" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-[#0b0f18] border border-white/10 shadow-2xl py-1.5 z-50 text-sm text-white/90">
               <a href="me.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Profile</a>
-              <a href="store.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Orders</a>
-              <a href="https://discord.gg/mineorange" target="_blank" rel="noopener" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Applications</a>
-              <a href="https://discord.gg/mineorange" target="_blank" rel="noopener" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Tournaments</a>
-              <button type="button" onclick="window.toggleUserMenu('${dropdownId}'); window.openSkinModal()" class="w-full text-left block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition cursor-pointer">Change Skin</button>
-              <button type="button" onclick="window.toggleUserMenu('${dropdownId}'); window.openPasswordModal()" class="w-full text-left block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition cursor-pointer">Change Password</button>
-              <button type="button" onclick="window.doBattlepieLogout()" class="w-full text-left block px-4 py-2 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 font-medium transition cursor-pointer">
+              <a href="orders.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Orders</a>
+              <a href="applications.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Applications</a>
+              <a href="tournaments.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Tournaments</a>
+              <a href="change-skin.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Change Skin</a>
+              <a href="change-password.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Change Password</a>
+              <a href="admin.html" class="block px-4 py-2 hover:bg-sky-500/10 text-sky-400 hover:text-sky-300 font-medium transition border-t border-white/5">Admin Panel</a>
+              <button type="button" onclick="window.doBattlepieLogout()" class="w-full text-left block px-4 py-2 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 font-medium transition cursor-pointer border-t border-white/5">
                 Logout
               </button>
             </div>
           </div>
-          <a href="me.html" class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="My Account">
+          <a href="mailbox.html" class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="Mailbox">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
           </a>
         </div>

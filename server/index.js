@@ -33,6 +33,11 @@ app.use('/api/webhooks', require('./routes/webhookApi'));
 app.use('/skin', require('./routes/skinApi'));
 app.use('/auth', require('./routes/authApi'));
 app.use('/api/auth', require('./routes/authApi'));
+app.use('/api/admin', require('./routes/adminApi'));
+app.use('/api', require('./routes/featuresApi'));
+
+// Uploads static directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -55,6 +60,38 @@ app.get('/login', (req, res) => {
 
 app.get('/me', (req, res) => {
   res.sendFile(path.join(config.paths.publicDir, 'me.html'));
+});
+
+app.get('/orders', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'orders.html'));
+});
+
+app.get('/applications', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'applications.html'));
+});
+
+app.get('/tournaments', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'tournaments.html'));
+});
+
+app.get(['/tournament', '/tournaments/:id'], (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'tournament.html'));
+});
+
+app.get('/mailbox', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'mailbox.html'));
+});
+
+app.get('/change-skin', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'change-skin.html'));
+});
+
+app.get('/change-password', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'change-password.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(config.paths.publicDir, 'admin.html'));
 });
 
 // Direct logout handler with full cookie clearance

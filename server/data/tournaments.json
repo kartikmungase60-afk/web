@@ -1,0 +1,58 @@
+[
+  {
+    "id": "bedwars-tournament",
+    "name": "BEDWARS TOURNAMENT",
+    "slug": "bedwars",
+    "status": "Registration open",
+    "isOpen": true,
+    "bannerImage": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1200&q=80",
+    "badgeIcon": "https://mc-heads.net/head/Bed/64",
+    "description": "Mine Orange is hosting a BedWars tournament, and it's time to see which team has what it takes to come out on top. Gather your teammates, defend your bed, collect resources, and fight your way across the map. Every match will test your teamwork, strategy, and ability to pull off a clutch when it matters most.\n\nWill your team rush to victory, or make an incredible comeback when the odds are against you? Step into the arena, take on the competition, and prove you're the best BedWars team on Mine Orange!",
+    "rules": [
+      "No hacking, auto-clickers, or blacklisted client modifications.",
+      "4 main players per team + up to 2 optional substitutes.",
+      "All team members must have linked their Minecraft account on mineorange.fun.",
+      "Matches will be officiated by server referees with instant replay."
+    ],
+    "maxTeams": 32,
+    "prizes": [
+      "1st Place: 100,000 Coins + 30 Days MVP++ Rank for all players",
+      "2nd Place: 50,000 Coins + 30 Days MVP+ Rank",
+      "3rd Place: 25,000 Coins + 30 Days VIP Rank"
+    ],
+    "teams": [
+      {
+        "id": "team_1",
+        "name": "OrangeKnights",
+        "logo": "bear",
+        "leader": "Kartikplayzz",
+        "players": [
+          "Kartikplayzz",
+          "ShadowRider",
+          "Frosty_Boy",
+          "PixelPro"
+        ],
+        "substitutes": [
+          "VortexMC"
+        ],
+        "status": "APPROVED",
+        "registeredAt": "2026-10-01T12:00:00Z"
+      },
+      {
+        "id": "team_2",
+        "name": "BedBusters",
+        "logo": "crocodile",
+        "leader": "DragonSlayer99",
+        "players": [
+          "DragonSlayer99",
+          "NovaBlade",
+          "AeroSwift",
+          "BlazeKing"
+        ],
+        "substitutes": [],
+        "status": "APPROVED",
+        "registeredAt": "2026-10-01T14:30:00Z"
+      }
+    ]
+  }
+]

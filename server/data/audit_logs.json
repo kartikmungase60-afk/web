@@ -1,0 +1,46 @@
+[
+  {
+    "id": "log_1790876593015_l2vs",
+    "timestamp": "2026-10-01T17:43:13.014Z",
+    "date": "2026-10-01",
+    "time": "23:13:13",
+    "ip": "103.21.244.2",
+    "category": "Store",
+    "action": "UPDATE_PRODUCT",
+    "details": "Changed price of VIP to .99",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_101",
+    "timestamp": "2026-10-01T22:30:15Z",
+    "date": "2026-10-01",
+    "time": "22:30:15",
+    "ip": "103.156.42.118",
+    "category": "Store",
+    "action": "UPDATE_PRODUCT",
+    "details": "Modified price and perks for 'MVP+ Rank' in Ranks category",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_102",
+    "timestamp": "2026-10-01T22:35:40Z",
+    "date": "2026-10-01",
+    "time": "22:35:40",
+    "ip": "103.156.42.118",
+    "category": "Tournaments",
+    "action": "OPEN_REGISTRATION",
+    "details": "Opened registration slots for BedWars Tournament (max 32 teams)",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_103",
+    "timestamp": "2026-10-01T22:42:01Z",
+    "date": "2026-10-01",
+    "time": "22:42:01",
+    "ip": "152.56.88.24",
+    "category": "Applications",
+    "action": "UPDATE_STATUS",
+    "details": "Moved submission sub_disc_101 for Kartikplayzz to 'UNDER REVIEW'",
+    "adminAccount": "[Protected Admin]"
+  }
+]

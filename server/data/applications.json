@@ -1,0 +1,205 @@
+{
+  "discordStaff": {
+    "id": "discord-staff",
+    "title": "Discord Staff Application",
+    "questionsCount": 11,
+    "isOpen": true,
+    "description": "Join our official Discord moderation team. Help moderate channels, host events, and support community members.",
+    "questions": [
+      {
+        "id": "q1",
+        "text": "What is your Discord username and tag?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q2",
+        "text": "What is your age?",
+        "type": "number",
+        "required": true
+      },
+      {
+        "id": "q3",
+        "text": "What time zone are you in?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q4",
+        "text": "How many hours per week can you dedicate to moderation?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q5",
+        "text": "Do you have previous staff experience on Minecraft/Discord servers?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q6",
+        "text": "How would you handle a member spamming NSFW or malicious links in chat?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q7",
+        "text": "How do you defuse a heated argument between two players?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q8",
+        "text": "What makes you different from other applicants?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q9",
+        "text": "Are you familiar with Discord automod, Dyno, and ticket bots?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q10",
+        "text": "Have you ever received a mute or ban on Mine Orange?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q11",
+        "text": "Any additional details or comments you'd like to share?",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "submissions": [
+      {
+        "id": "sub_disc_101",
+        "applicant": "Kartikplayzz",
+        "discordId": "kartik_xd1",
+        "submittedAt": "2026-10-01T15:20:00Z",
+        "status": "UNDER REVIEW",
+        "answers": {
+          "q1": "kartik_xd1#0001",
+          "q2": "18",
+          "q3": "IST (UTC+5:30)",
+          "q4": "20-25 hours",
+          "q5": "Yes, moderated two community servers with 1,500+ members.",
+          "q6": "Immediately delete the messages, timeout the user, warn the channel, and notify higher staff if a raid is occurring.",
+          "q7": "Instruct both parties to stop calmly, move private disputes to DMs, and issue warnings if rules are broken.",
+          "q8": "High activity during late hours when few moderators are active, very patient and calm.",
+          "q9": "Yes, experienced with Carl-bot, Dyno, and ticket systems.",
+          "q10": "No, never.",
+          "q11": "Eager to help keep Mine Orange safe and welcoming!"
+        }
+      }
+    ]
+  },
+  "minecraftStaff": {
+    "id": "minecraft-staff",
+    "title": "Minecraft Staff Application",
+    "questionsCount": 16,
+    "isOpen": true,
+    "description": "By checking the option below, You will agree to every single rule which our server follows without any hesitation. If you get selected for the Discord Staff or Minecraft Staff than you have to maintain high professionalism and fairness.",
+    "questions": [
+      {
+        "id": "q1",
+        "text": "What is your in-game Minecraft username?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q2",
+        "text": "Are you Java or Bedrock player?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q3",
+        "text": "What is your age?",
+        "type": "number",
+        "required": true
+      },
+      {
+        "id": "q4",
+        "text": "What time zone are you in?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q5",
+        "text": "How long have you played on Mine Orange?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q6",
+        "text": "How many hours per day can you be active in-game?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q7",
+        "text": "Do you have working microphone and Discord voice capability?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q8",
+        "text": "Can you record 60fps gameplay clips as proof of rule violations?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q9",
+        "text": "Do you have prior staff experience on Minecraft servers?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q10",
+        "text": "How would you identify and handle an undercover xray or fly hacker?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q11",
+        "text": "What would you do if a VIP player was swearing and harassing new players?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q12",
+        "text": "What would you do if a fellow staff member abused permissions?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q13",
+        "text": "Which CoreProtect and LiteBans commands are you familiar with?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "q14",
+        "text": "Why do you want to join the Mine Orange staff team?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q15",
+        "text": "Have you ever been punished on this or any other network?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "q16",
+        "text": "Do you accept that staff duty requires prioritizing tickets over casual play?",
+        "type": "text",
+        "required": true
+      }
+    ],
+    "submissions": []
+  }
+}

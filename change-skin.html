@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en" class="dark h-full">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Change Skin · Mine Orange Network</title>
+  <meta name="description" content="Upload and update your custom Minecraft skin on Mine Orange.">
+  <link rel="icon" href="uploads/logo.png?v=transparent">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  <script src="js/account-nav.js"></script>
+
+  <style>
+    body {
+      background-color: #07080b;
+      color: #f3f4f6;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body class="min-h-full flex flex-col bg-[#07080b] selection:bg-[#ff2e1f] selection:text-white antialiased" x-data="changeSkinPage()" x-init="init()">
+
+  <!-- Top Navigation Bar -->
+  <nav class="sticky top-0 z-40 w-full border-b border-white/5 bg-[#07080b]/90 backdrop-blur-xl" x-data="sharedAccountNav()" x-init="init()">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="index.html" class="flex items-center gap-2.5 font-display font-bold text-base sm:text-lg min-w-0">
+        <img src="uploads/logo.png?v=transparent" alt="Mine Orange" class="w-8 h-8 object-contain">
+        <span class="tracking-tight text-white">Mine Orange</span>
+      </a>
+
+      <!-- Center Desktop Nav Links -->
+      <div class="hidden md:flex items-center gap-6 text-sm text-white/70">
+        <a class="hover:text-white transition" href="index.html">Home</a>
+        <a class="hover:text-white transition" href="store.html">Store</a>
+        <a class="hover:text-white transition" href="https://discord.gg/mineorange" target="_blank" rel="noopener">Discord</a>
+      </div>
+
+      <!-- Right Navigation Actions -->
+      <div class="flex items-center gap-3">
+        <!-- Cart Icon -->
+        <a href="checkout.html" class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition" title="Shopping Cart">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+        </a>
+
+        <!-- User Dropdown Menu -->
+        <div class="relative" @click.outside="open = false">
+          <button type="button" @click="open = !open"
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 text-sm font-medium transition cursor-pointer">
+            <img :src="getAvatarUrl()" alt="Avatar" class="w-5 h-5 rounded-full object-cover">
+            <span class="max-w-[120px] truncate" x-text="getHandle()">@kartik_xd1</span>
+            <svg class="w-3.5 h-3.5 opacity-60 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div x-show="open" x-cloak
+               class="dropdown-menu absolute right-0 mt-2 w-48 rounded-xl bg-[#0b0f18] border border-white/10 shadow-2xl py-1.5 z-50 text-sm">
+            <a href="me.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Profile</a>
+            <a href="orders.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Orders</a>
+            <a href="applications.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Applications</a>
+            <a href="tournaments.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Tournaments</a>
+            <a href="change-skin.html" class="block px-4 py-2 bg-white/5 text-white font-medium transition">Change Skin</a>
+            <a href="change-password.html" class="block px-4 py-2 hover:bg-white/5 text-white/90 hover:text-white transition">Change Password</a>
+            <a href="admin.html" class="block px-4 py-2 hover:bg-sky-500/10 text-sky-400 hover:text-sky-300 font-medium transition border-t border-white/5">Admin Panel</a>
+            <a href="login.html" @click.prevent="logout()" class="block px-4 py-2 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 font-medium transition border-t border-white/5">Logout</a>
+          </div>
+        </div>
+
+        <!-- Mailbox Notification Icon -->
+        <a href="mailbox.html" class="relative w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="Mailbox">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <template x-if="mailboxCount > 0">
+            <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#ff2e1f] text-[10px] font-bold text-white flex items-center justify-center" x-text="mailboxCount"></span>
+          </template>
+        </a>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Container (Matches Screenshot 224823) -->
+  <main class="max-w-[720px] mx-auto px-4 py-8 sm:py-12 w-full flex-1">
+    
+    <!-- Back Link -->
+    <div class="mb-4">
+      <a href="me.html" class="inline-flex items-center text-xs sm:text-sm font-medium text-white/70 hover:text-white transition">
+        ← Back to account
+      </a>
+    </div>
+
+    <!-- Player Header Block -->
+    <div class="flex items-center gap-4 mb-8">
+      <img :src="'https://mc-heads.net/avatar/' + encodeURIComponent(username) + '/64'"
+           alt="Player Avatar" class="w-14 h-14 rounded-2xl object-cover border border-white/10 shadow-lg bg-black/40">
+      <div>
+        <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-[#838b99] font-medium mb-0.5">CHANGE SKIN</div>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-white tracking-tight" x-text="username">Kartikplayzz</h1>
+      </div>
+    </div>
+
+    <!-- Main Skin Management Card -->
+    <div class="rounded-2xl bg-[#0e1017] border border-[#1b1f2a] shadow-2xl p-6 sm:p-8">
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Skin 3D Preview -->
+        <div class="md:col-span-4 flex flex-col items-center justify-center p-4 rounded-xl bg-black/40 border border-white/5">
+          <div class="relative w-36 h-56 flex items-center justify-center overflow-hidden">
+            <template x-if="previewUrl">
+              <img :src="previewUrl" alt="Skin Preview" class="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+            </template>
+            <template x-if="!previewUrl">
+              <img :src="'https://mc-heads.net/body/' + encodeURIComponent(username) + '/right'"
+                   alt="Skin Preview" class="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+            </template>
+          </div>
+          <span class="text-xs text-[#8c92a2] mt-3 font-medium">Current skin</span>
+        </div>
+
+        <!-- Right Column: Upload Form & Dropzone -->
+        <div class="md:col-span-8 flex flex-col justify-between">
+          <div>
+            <h2 class="font-display font-bold text-xl text-white mb-1.5">Upload a new skin</h2>
+            <p class="text-xs text-[#8c92a2] leading-relaxed mb-6">
+              Drop in a standard Minecraft skin PNG (64×64). The server will apply it in-game and it will show here once it propagates.
+            </p>
+
+            <!-- Dropzone (Click / Drag & Drop) -->
+            <div @click="$refs.skinFileInput.click()"
+                 @dragover.prevent="dragOver = true"
+                 @dragleave.prevent="dragOver = false"
+                 @drop.prevent="handleDrop($event)"
+                 class="w-full py-8 px-4 rounded-xl border border-dashed transition cursor-pointer text-center flex flex-col items-center justify-center mb-6"
+                 :class="dragOver ? 'border-[#ff2e1f] bg-[#ff2e1f]/5' : (selectedFile ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/15 bg-black/20 hover:border-white/30')">
+              
+              <input type="file" x-ref="skinFileInput" @change="handleFileSelect($event)" accept="image/png" class="hidden">
+              
+              <template x-if="!selectedFile">
+                <div>
+                  <div class="text-sm font-semibold text-white mb-1">Click to choose a PNG</div>
+                  <div class="text-[11px] text-[#8c92a2]">64×64 or 64×32 · max 512 KB</div>
+                </div>
+              </template>
+
+              <template x-if="selectedFile">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                  <div class="text-left">
+                    <div class="text-xs font-semibold text-white truncate max-w-[200px]" x-text="selectedFile.name"></div>
+                    <div class="text-[10px] text-emerald-400">Ready to apply</div>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3">
+              <button type="button" @click="applySkin()" :disabled="!selectedFile || uploading"
+                      class="px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer"
+                      :class="selectedFile ? 'bg-[#ff2e1f] hover:bg-[#e02618] text-white shadow-lg shadow-[#ff2e1f]/20' : 'bg-white/5 text-white/30 cursor-not-allowed'">
+                <template x-if="uploading">
+                  <div class="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                </template>
+                <span x-text="uploading ? 'Applying skin...' : 'Apply skin'">Apply skin</span>
+              </button>
+
+              <button type="button" @click="cancelSelection()"
+                      class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white font-medium text-xs sm:text-sm transition cursor-pointer">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Reset Section -->
+      <div class="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <p class="text-xs text-[#8c92a2]">
+          Reset to default skin (removes the custom skin on the server).
+        </p>
+        <button type="button" @click="resetSkin()" :disabled="resetting"
+                class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white transition cursor-pointer self-start sm:self-auto">
+          <span x-text="resetting ? 'Resetting...' : 'Reset skin'">Reset skin</span>
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-white/5 py-8 text-center text-xs text-white/40">
+    <div class="mb-2">© 2026 Mine Orange</div>
+    <div class="flex justify-center gap-4 text-white/60 mb-4">
+      <a href="terms.html" class="hover:text-white transition">Terms</a>
+      <span>·</span>
+      <a href="privacy.html" class="hover:text-white transition">Privacy Policy</a>
+    </div>
+    <div class="flex justify-center gap-3 text-white/50">
+      <a href="https://discord.gg/mineorange" target="_blank" rel="noopener" class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:text-white hover:bg-white/10 transition">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M20.317 4.37a19.91 19.91 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 0 0-5.487 0c-.164-.39-.404-.874-.617-1.249a.077.077 0 0 0-.08-.037A19.74 19.74 0 0 0 3.678 4.37a.07.07 0 0 0-.032.027C.534 9.046-.321 13.58.099 18.057a.082.082 0 0 0 .031.055 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.027c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.076.076 0 0 0-.04.107c.36.698.772 1.363 1.225 1.993a.077.077 0 0 0 .084.028 19.86 19.86 0 0 0 6-3.03.077.077 0 0 0 .031-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.335.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.156 2.42 0 1.334-.946 2.419-2.156 2.419zm7.974 0c-1.183 0-2.156-1.085-2.156-2.419 0-1.335.955-2.42 2.156-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.334-.946 2.419-2.157 2.419z"/></svg>
+      </a>
+      <a href="https://instagram.com" target="_blank" rel="noopener" class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:text-white hover:bg-white/10 transition">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    function changeSkinPage() {
+      return {
+        username: 'Kartikplayzz',
+        selectedFile: null,
+        base64Data: null,
+        previewUrl: null,
+        dragOver: false,
+        uploading: false,
+        resetting: false,
+
+        init() {
+          const storedPlayer = localStorage.getItem('mo_player');
+          if (storedPlayer) {
+            try {
+              const p = JSON.parse(storedPlayer);
+              if (p.minecraftUsername) this.username = p.minecraftUsername;
+              if (p.skinUrl) this.previewUrl = p.skinUrl;
+            } catch(e) {}
+          }
+        },
+
+        handleFileSelect(event) {
+          const file = event.target.files && event.target.files[0];
+          if (file) this.processFile(file);
+        },
+
+        handleDrop(event) {
+          this.dragOver = false;
+          const file = event.dataTransfer.files && event.dataTransfer.files[0];
+          if (file) this.processFile(file);
+        },
+
+        processFile(file) {
+          if (!file.type.includes('png')) {
+            alert('Please select a PNG file.');
+            return;
+          }
+          if (file.size > 512 * 1024) {
+            alert('File size exceeds 512 KB limit.');
+            return;
+          }
+          this.selectedFile = file;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.base64Data = e.target.result;
+            this.previewUrl = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        },
+
+        cancelSelection() {
+          this.selectedFile = null;
+          this.base64Data = null;
+          this.previewUrl = null;
+        },
+
+        applySkin() {
+          if (!this.base64Data) return;
+          this.uploading = true;
+
+          fetch('/api/skin/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: this.username,
+              base64Data: this.base64Data,
+              filename: this.selectedFile.name
+            })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              alert(d.message || 'Skin applied successfully!');
+              this.selectedFile = null;
+              // update player cache
+              const storedPlayer = localStorage.getItem('mo_player');
+              if (storedPlayer) {
+                try {
+                  const p = JSON.parse(storedPlayer);
+                  p.skinUrl = d.skinUrl;
+                  localStorage.setItem('mo_player', JSON.stringify(p));
+                } catch(e) {}
+              }
+            } else {
+              alert(d.error || 'Failed to upload skin');
+            }
+          })
+          .catch(e => {
+            alert('Error: ' + e.message);
+          })
+          .finally(() => {
+            this.uploading = false;
+          });
+        },
+
+        resetSkin() {
+          if (!confirm('Are you sure you want to reset your skin to default Steve?')) return;
+          this.resetting = true;
+
+          fetch('/api/skin/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: this.username })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              this.previewUrl = `https://mc-heads.net/body/${encodeURIComponent(this.username)}/right`;
+              this.selectedFile = null;
+              alert(d.message || 'Skin reset to default Steve model.');
+            }
+          })
+          .catch(e => {
+            alert('Error resetting skin: ' + e.message);
+          })
+          .finally(() => {
+            this.resetting = false;
+          });
+        }
+      };
+    }
+  </script>
+
+</body>
+</html>
