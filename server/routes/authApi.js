@@ -199,11 +199,12 @@ router.get('/discord/callback', async (req, res) => {
 // GET /auth/quick-login (One-click login for local development / testing)
 router.get('/quick-login', (req, res) => {
   const sessionId = 'usr_' + crypto.randomBytes(16).toString('hex');
+  const customUser = req.query.username ? req.query.username.trim() : 'kartikplayzz1';
   const sessionUser = {
     id: '768387330485518376',
-    username: 'kartikplayzz1',
-    global_name: 'Kartik Playzz',
-    avatarUrl: 'https://battlepie.net/uploads/logo-1783260029774.png',
+    username: customUser,
+    global_name: customUser,
+    avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(customUser)}/128`,
     discriminator: '0',
     joinedAt: new Date().toISOString()
   };

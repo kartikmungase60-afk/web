@@ -101,17 +101,23 @@
         <!-- Divider -->
         <div class="relative py-2 flex items-center justify-center">
           <div class="border-t border-white/10 w-full"></div>
-          <span class="absolute bg-[#0d1017] px-3 text-[11px] font-mono text-white/40 uppercase tracking-widest">or quick testing</span>
+          <span class="absolute bg-[#0d1017] px-3 text-[11px] font-mono text-white/40 uppercase tracking-widest">or instant sign in</span>
         </div>
 
-        <!-- Secondary Action: Local Dev Quick Login -->
-        <button id="btnQuick" type="button"
-           class="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/90 hover:text-white font-medium text-xs flex items-center justify-center gap-2.5 transition cursor-pointer">
-          <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
-          </svg>
-          <span>1-Click Test Login (@kartikplayzz1)</span>
-        </button>
+        <!-- Custom Username Instant Login Form -->
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+          <label class="text-[11px] font-semibold text-white/80 block">Sign In with Your Username</label>
+          <div class="flex gap-2">
+            <input type="text" id="inputCustomUsername" placeholder="Enter username (e.g. Kartik)" value="kartikplayzz1"
+              class="flex-1 px-3 py-2.5 rounded-lg bg-black/50 border border-white/10 hover:border-white/20 focus:border-emerald-400 text-white text-xs placeholder:text-white/30 focus:outline-none transition font-medium">
+            <button id="btnQuickCustom" type="button"
+              class="px-3.5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-900/30 whitespace-nowrap">
+              <span>Sign In</span>
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          </div>
+          <p class="text-[10px] text-white/40">Instant access to profile, in-game link code, and web store checkout.</p>
+        </div>
       </div>
 
       <!-- Backend Connection Status Indicator -->
@@ -228,12 +234,13 @@
     }
     updateBackendStatus();
 
-    function doClientLogin() {
+    function doClientLogin(customName) {
+      const username = (customName || (document.getElementById('inputCustomUsername') ? document.getElementById('inputCustomUsername').value : '') || 'kartikplayzz1').trim();
       const demoUser = {
         id: "309155902",
-        username: "kartikplayzz1",
-        global_name: "Kartik Playzz",
-        avatarUrl: "https://battlepie.net/uploads/logo-1783260029774.png",
+        username: username,
+        global_name: username,
+        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(username)}/128`,
         isDemo: true
       };
       localStorage.setItem('battlepie_client_user', JSON.stringify(demoUser));
@@ -260,15 +267,30 @@
       startDiscordOAuth();
     });
 
-    document.getElementById('btnQuick').addEventListener('click', function(e) {
-      e.preventDefault();
-      if (isStatic) {
-        doClientLogin();
-      } else {
-        const returnUrl = window.location.origin + window.location.pathname.replace('login.html', 'me.html');
-        window.location.href = `/auth/quick-login?return_to=${encodeURIComponent(returnUrl)}`;
-      }
-    });
+    const btnCustom = document.getElementById('btnQuickCustom');
+    if (btnCustom) {
+      btnCustom.addEventListener('click', function(e) {
+        e.preventDefault();
+        const username = (document.getElementById('inputCustomUsername').value || 'kartikplayzz1').trim();
+        if (isStatic) {
+          doClientLogin(username);
+        } else {
+          const returnUrl = window.location.origin + window.location.pathname.replace('login.html', 'me.html');
+          window.location.href = `/auth/quick-login?username=${encodeURIComponent(username)}&return_to=${encodeURIComponent(returnUrl)}`;
+        }
+      });
+    }
+
+    // Support ENTER key in username input
+    const inputCustom = document.getElementById('inputCustomUsername');
+    if (inputCustom) {
+      inputCustom.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (btnCustom) btnCustom.click();
+        }
+      });
+    }
 
     // Modal Events
     document.getElementById('btnConfigBackend').addEventListener('click', function() {
