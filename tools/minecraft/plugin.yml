@@ -1,15 +1,16 @@
-name: BattlepieLink
-version: 1.1.0
+name: MineOrangeLink
+version: 1.2.0
 main: net.battlepie.link.BattlepieLinkPlugin
 api-version: '1.20'
-author: Battlepie Network
-description: Discord Account Linking Plugin for Battlepie Network (Cracked + Premium + Bedrock + SkinsRestorer)
+author: Mine Orange Network
+description: Discord Account Linking Plugin for Mine Orange Network (Cracked + Premium + Bedrock + SkinsRestorer)
 softdepend: [SkinsRestorer, Floodgate]
 commands:
   link:
-    description: Link your Minecraft account with your Battlepie Discord
+    description: Link your Minecraft account with your Mine Orange Discord
     usage: /link <8-digit code>
-  battlepielink:
-    description: Manage BattlepieLink plugin
-    usage: /battlepielink reload
-    permission: battlepie.admin
+  mineorangelink:
+    description: Manage MineOrangeLink plugin
+    usage: /mineorangelink reload
+    permission: mineorange.admin
+    aliases: [battlepielink]

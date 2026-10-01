@@ -41,7 +41,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
             getCommand("battlepielink").setExecutor(this);
         }
 
-        getLogger().info("BattlepieLinkPlugin v1.2.0 enabled! API URL: " + apiUrl);
+        getLogger().info("MineOrangeLinkPlugin v1.2.0 enabled! API URL: " + apiUrl);
 
         // Keep-alive background task: pings /health every 10 minutes (prevents Render free-tier cold sleep)
         backgroundExecutor.scheduleWithFixedDelay(() -> {
@@ -68,7 +68,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
 
     public void loadConfiguration() {
         reloadConfig();
-        this.apiUrl = getConfig().getString("api-url", "https://battlepie-backend.onrender.com/api/auth/link/ingame");
+        this.apiUrl = getConfig().getString("api-url", "https://mineorange.fun/api/auth/link/ingame");
         this.serverSecret = getConfig().getString("server-secret", "battlepie_secret_token_123");
     }
 
@@ -126,7 +126,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
             if (sender.isOp() || sender.hasPermission("battlepie.admin")) {
                 loadConfiguration();
                 sender.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                    "&8[&c&lBattlepie&8] &aConfiguration reloaded! API URL: &e" + apiUrl));
+                    "&8[&6&lMine Orange&8] &aConfiguration reloaded! API URL: &e" + apiUrl));
                 return true;
             }
         }
@@ -138,7 +138,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
 
         Player player = (Player) sender;
         if (args.length < 1) {
-            sendMsg(player, "&8[&c&lBattlepie&8] &cUsage: &e/link <8-digit code>\n&7Get your link code at: &fhttps://kartikmungase60-afk.github.io/web/me.html");
+            sendMsg(player, "&8[&6&lMine Orange&8] &cUsage: &e/link <8-digit code>\n&7Get your link code at: &fhttps://mineorange.fun/me");
             return true;
         }
 
@@ -179,7 +179,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
             } catch (Throwable ignored) {}
         }
 
-        sendMsg(player, "&8[&c&lBattlepie&8] &7Contacting Battlepie network to verify code &e" + code + "&7...");
+        sendMsg(player, "&8[&6&lMine Orange&8] &7Contacting Mine Orange network to verify code &e" + code + "&7...");
 
         final boolean finalIsBedrock = isBedrock;
         final String finalSkinName = skinName;
@@ -193,7 +193,7 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
                 conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("User-Agent", "BattlepieLink/1.2.0 (Minecraft Server)");
+                conn.setRequestProperty("User-Agent", "MineOrangeLink/1.2.0 (Minecraft Server)");
                 conn.setDoOutput(true);
                 conn.setConnectTimeout(25000);
                 conn.setReadTimeout(25000);
@@ -218,14 +218,14 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
                     }
                 }
 
-                getLogger().info("[BattlepieLink] Verification for " + playerName + " (code: " + code + ") returned HTTP " + statusCode);
+                getLogger().info("[MineOrangeLink] Verification for " + playerName + " (code: " + code + ") returned HTTP " + statusCode);
 
                 if (statusCode == 200) {
-                    sendMsg(player, "&8[&c&lBattlepie&8] &a&lSUCCESS! &7Your account &f" + playerName + " &7is now linked to Discord!");
+                    sendMsg(player, "&8[&6&lMine Orange&8] &a&lSUCCESS! &7Your account &f" + playerName + " &7is now linked to Discord!");
                     if (finalSkinName != null) {
-                        sendMsg(player, "&8[&c&lBattlepie&8] &bSkinsRestorer: &7Synced custom skin &e" + finalSkinName + "&7.");
+                        sendMsg(player, "&8[&6&lMine Orange&8] &bSkinsRestorer: &7Synced custom skin &e" + finalSkinName + "&7.");
                     }
-                    sendMsg(player, "&8[&c&lBattlepie&8] &aYour perks, roles, and store sync are now active.");
+                    sendMsg(player, "&8[&6&lMine Orange&8] &aYour perks, roles, and store sync are now active.");
                 } else {
                     String errMsg = "Invalid or expired link code.";
                     if (responseBody.contains("\"error\":\"")) {
@@ -235,16 +235,12 @@ public class BattlepieLinkPlugin extends JavaPlugin implements CommandExecutor {
                             if (eIdx > sIdx) errMsg = responseBody.substring(sIdx, eIdx);
                         } catch (Exception ignored) {}
                     }
-                    sendMsg(player, "&8[&c&lBattlepie&8] &c&lFAILED: &7" + errMsg + " Please check your code on the web page.");
+                    sendMsg(player, "&8[&6&lMine Orange&8] &c&lFAILED: &7" + errMsg + " Please check your code on https://mineorange.fun/me");
                 }
             } catch (Exception ex) {
-                getLogger().severe("[BattlepieLink] Error connecting to Web API: " + ex.getMessage());
+                getLogger().severe("[MineOrangeLink] Error connecting to Web API: " + ex.getMessage());
                 String msg = ex.getMessage();
-                if (msg != null && msg.toLowerCase().contains("timed out")) {
-                    sendMsg(player, "&8[&c&lBattlepie&8] &eNotice: Web server is waking up from sleep. Please try &f/link " + code + " &eagain in 5 seconds!");
-                } else {
-                    sendMsg(player, "&8[&c&lBattlepie&8] &cError connecting to Battlepie Web API: &7" + msg);
-                }
+                sendMsg(player, "&8[&6&lMine Orange&8] &cError connecting to Mine Orange Web API: &7" + msg);
             }
         });
 

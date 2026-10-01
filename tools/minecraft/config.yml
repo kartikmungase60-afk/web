@@ -1,6 +1,5 @@
-# BattlepieLink Plugin Configuration
-# Set api-url to your web server (use localhost for local testing, or https://battlepie-backend.onrender.com for production)
-api-url: "https://battlepie-backend.onrender.com/api/auth/link/ingame"
+# Mine Orange In-Game Account Linker Configuration
+api-url: "https://mineorange.fun/api/auth/link/ingame"
 
 # Server secret token to authenticate requests from your Minecraft server to the website backend
 server-secret: "battlepie_secret_token_123"
