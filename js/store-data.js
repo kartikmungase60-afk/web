@@ -11,8 +11,8 @@ const BATTLEPIE_DATA = {
     defaultPlayersOnline: 319,
     defaultDiscordOnline: 2583,
     discordInvite: "https://discord.gg/mineorange",
-    version: "BattlePie 1.8-1.21+",
-    motd: "BATTLEPIE | [1.21+] LIFESTEAL NEW SEASON OUT!"
+    version: "Mine Orange 1.8-1.21+",
+    motd: "MINE ORANGE | [1.21+] LIFESTEAL NEW SEASON OUT!"
   },
   goal: {
     title: "Monthly Goal",
