@@ -230,13 +230,15 @@
               <!-- Top Row: Label & Live Countdown -->
               <div class="flex items-center justify-between text-xs mb-3 font-mono">
                 <span class="text-[#727888] tracking-[0.15em] uppercase text-[10.5px] font-semibold">YOUR LINK CODE</span>
-                <span class="text-[#8c92a2] font-sans text-xs" x-text="'Expires in ' + formattedCountdown"></span>
+                <span class="text-[#8c92a2] font-sans text-xs cursor-pointer hover:text-white transition"
+                      @click="secondsLeft <= 0 && generateNewCode()"
+                      x-text="formattedCountdown"></span>
               </div>
 
               <!-- Big Red Link Code Display -->
               <div class="text-left py-1 mb-5">
                 <div class="font-display font-extrabold text-4xl sm:text-5xl text-[#ff2e1f] tracking-[0.18em]"
-                     x-text="linkCode"></div>
+                     x-text="linkCode || '........'"></div>
               </div>
 
               <!-- Full Command Row -->
@@ -331,10 +333,11 @@
     function getApiBase() {
       const custom = localStorage.getItem('battlepie_backend_url');
       if (custom) return custom.replace(/\/+$/, '');
-      if (window.location.hostname.endsWith('github.io') || window.location.hostname === '') {
-        return 'https://battlepie-backend.onrender.com';
+      const host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return window.location.origin;
       }
-      return '';
+      return 'https://battlepie-backend.onrender.com';
     }
 
     function myAccountNav() {
@@ -407,6 +410,7 @@
         linkCode: '',
         secondsLeft: 120,
         timer: null,
+        pollTimer: null,
         copied: false,
         sseSource: null,
         oauthError: new URLSearchParams(window.location.search).get('error') || null,
@@ -414,23 +418,24 @@
         async logout() {
           localStorage.removeItem('battlepie_client_user');
           localStorage.removeItem('battlepie_session_id');
+          localStorage.removeItem('battlepie_demo_linked');
+          localStorage.removeItem('battlepie_demo_player');
           try {
             document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-            const backend = localStorage.getItem('battlepie_backend_url') || '';
-            await fetch((backend ? backend : '') + '/auth/logout', { method: 'POST', headers: { Accept: 'application/json' }, credentials: 'include' });
+            await fetch(getApiBase() + '/auth/logout', { method: 'POST', headers: { Accept: 'application/json' }, credentials: 'include' });
           } catch (e) {}
           window.location.href = 'me.html?logged_out=' + Date.now();
         },
 
         get formattedCountdown() {
           if (this.secondsLeft <= 0) {
-            return 'Active (Click to refresh)';
+            return 'Code expired (Click to refresh)';
           }
           const mins = Math.floor(this.secondsLeft / 60);
           const secs = this.secondsLeft % 60;
-          return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+          return `Expires in ${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
         },
 
         async init() {
@@ -448,7 +453,6 @@
                 this.user = u;
                 this.authenticated = true;
                 if (window.zlToast) window.zlToast('Welcome, @' + (u.global_name || u.username) + '!');
-                // Clean the query parameters from URL cleanly
                 window.history.replaceState({}, document.title, window.location.pathname);
               }
             } catch (e) {
@@ -456,77 +460,86 @@
             }
           }
 
+          // Initial load
           await this.loadStatus();
+
+          // Start realtime link listeners (SSE + polling fallback)
           if (this.authenticated && !this.isLinked) {
             this.startCountdown();
             this.initSse();
+            this.startPolling();
           }
         },
 
         async loadStatus() {
           this.loading = true;
-          // Check local client-side storage first (for GitHub Pages / static mode)
-          try {
-            const cached = localStorage.getItem('battlepie_client_user');
-            if (cached) {
-              const u = JSON.parse(cached);
-              if (u && u.username) {
-                this.user = u;
-                this.authenticated = true;
-                this.isLinked = Boolean(localStorage.getItem('battlepie_demo_linked'));
-                this.linkedPlayer = this.isLinked ? (localStorage.getItem('battlepie_demo_player') || 'KartikPlayzz') : null;
-                this.linkCode = 'BATTLE-8492';
-                this.secondsLeft = 120;
-                this.loading = false;
+          const sessionId = localStorage.getItem('battlepie_session_id') || '';
 
-                // Also check live backend if available
-                const backend = localStorage.getItem('battlepie_backend_url') || '';
-                try {
-                  const res = await fetch((backend ? backend : '') + '/api/auth/link/status', { credentials: 'include' });
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data.authenticated && data.user) {
-                      this.user = data.user;
-                      this.isLinked = Boolean(data.isLinked);
-                      this.linkedPlayer = data.linkedPlayer;
-                      if (data.activeCode) {
-                        this.linkCode = data.activeCode.code;
-                        this.secondsLeft = data.activeCode.expiresInSeconds || 120;
-                      }
-                    }
-                  }
-                } catch(e) {}
-                return;
+          // 1. Check local client-side storage for cached Discord user
+          let currentUser = this.user;
+          if (!currentUser) {
+            try {
+              const cached = localStorage.getItem('battlepie_client_user');
+              if (cached) {
+                const u = JSON.parse(cached);
+                if (u && u.username) {
+                  currentUser = u;
+                  this.user = u;
+                  this.authenticated = true;
+                }
               }
-            }
-          } catch (err) {}
+            } catch (err) {}
+          }
 
+          // 2. Fetch live status from backend
           try {
-            const backend = localStorage.getItem('battlepie_backend_url') || '';
-            const res = await fetch((backend ? backend : '') + '/api/auth/link/status', { credentials: 'include' });
+            const api = getApiBase();
+            const payload = {
+              user: currentUser,
+              session_id: sessionId
+            };
+
+            const res = await fetch(api + '/api/auth/link/status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Session-Id': sessionId
+              },
+              body: JSON.stringify(payload),
+              credentials: 'include'
+            });
+
             if (res.ok) {
               const data = await res.json();
-              this.authenticated = Boolean(data.authenticated);
-              if (this.authenticated && data.user) {
+              if (data.authenticated && data.user) {
+                this.authenticated = true;
                 this.user = data.user;
                 this.isLinked = Boolean(data.isLinked);
                 this.linkedPlayer = data.linkedPlayer;
-                if (data.activeCode) {
+
+                if (this.isLinked) {
+                  clearInterval(this.timer);
+                  clearInterval(this.pollTimer);
+                } else if (data.activeCode && data.activeCode.code) {
                   this.linkCode = data.activeCode.code;
-                  this.secondsLeft = data.activeCode.expiresInSeconds !== undefined ? data.activeCode.expiresInSeconds : Math.max(0, Math.floor((data.activeCode.uiExpiresAt - Date.now()) / 1000));
+                  this.secondsLeft = data.activeCode.expiresInSeconds || 120;
+                  this.startCountdown();
+                } else {
+                  // No active code on backend yet - generate one
+                  await this.generateNewCode();
                 }
-              } else {
-                this.user = null;
-                this.isLinked = false;
-                this.linkedPlayer = null;
-                this.linkCode = '';
+                return;
               }
             }
           } catch (e) {
-            this.authenticated = false;
-            this.user = null;
+            console.warn('[Battlepie] Could not reach backend status endpoint:', e);
           } finally {
             this.loading = false;
+          }
+
+          // If backend couldn't be reached or no active code yet, but we are authenticated, generate code
+          if (this.authenticated && !this.isLinked && !this.linkCode) {
+            await this.generateNewCode();
           }
         },
 
@@ -544,30 +557,33 @@
         async generateNewCode() {
           if (!this.authenticated || this.codeLoading) return;
           this.codeLoading = true;
-          if (this.user && this.user.isDemo) {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = 'BP-';
-            for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-            this.linkCode = code;
-            this.secondsLeft = 120;
-            this.startCountdown();
-            if (window.zlToast) window.zlToast('New code generated: ' + code);
-            this.codeLoading = false;
-            return;
-          }
+          const sessionId = localStorage.getItem('battlepie_session_id') || '';
+
           try {
-            const backend = localStorage.getItem('battlepie_backend_url') || '';
-            const res = await fetch((backend ? backend : '') + '/api/auth/link/generate-code', { method: 'POST', credentials: 'include' });
+            const api = getApiBase();
+            const res = await fetch(api + '/api/auth/link/generate-code', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Session-Id': sessionId
+              },
+              body: JSON.stringify({
+                user: this.user,
+                session_id: sessionId
+              }),
+              credentials: 'include'
+            });
+
             if (res.ok) {
               const data = await res.json();
               if (data.code) {
                 this.linkCode = data.code;
                 this.secondsLeft = data.expiresInSeconds || 120;
                 this.startCountdown();
-                if (window.zlToast) window.zlToast('New link code: ' + data.code);
+                if (window.zlToast) window.zlToast('New 8-digit link code: ' + data.code);
               }
             } else {
-              const err = await res.json();
+              const err = await res.json().catch(() => ({}));
               if (window.zlToast) window.zlToast(err.error || 'Failed to generate code');
             }
           } catch (e) {
@@ -578,11 +594,12 @@
         },
 
         initSse() {
-          if (!this.authenticated || (this.user && this.user.isDemo)) return;
+          if (!this.authenticated || !this.user || !this.user.id) return;
           try {
             if (this.sseSource) this.sseSource.close();
-            const backend = localStorage.getItem('battlepie_backend_url') || '';
-            this.sseSource = new EventSource((backend ? backend : '') + '/api/auth/link/events');
+            const api = getApiBase();
+            const sseUrl = `${api}/api/auth/link/events?user_id=${encodeURIComponent(this.user.id)}&user=${encodeURIComponent(JSON.stringify(this.user))}`;
+            this.sseSource = new EventSource(sseUrl);
             this.sseSource.onmessage = (e) => {
               try {
                 const data = JSON.parse(e.data);
@@ -590,6 +607,7 @@
                   this.isLinked = true;
                   this.linkedPlayer = data.player;
                   clearInterval(this.timer);
+                  clearInterval(this.pollTimer);
                   if (window.zlToast) window.zlToast(`Linked to ${data.player.minecraftUsername} (${data.player.accountType})!`);
                 } else if (data.event === 'unlinked') {
                   this.isLinked = false;
@@ -601,6 +619,40 @@
           } catch (e) {}
         },
 
+        startPolling() {
+          clearInterval(this.pollTimer);
+          // Poll every 3 seconds to guarantee instant update as soon as user runs /link in Minecraft
+          this.pollTimer = setInterval(async () => {
+            if (this.isLinked || !this.authenticated || !this.user) {
+              clearInterval(this.pollTimer);
+              return;
+            }
+            try {
+              const api = getApiBase();
+              const sessionId = localStorage.getItem('battlepie_session_id') || '';
+              const res = await fetch(api + '/api/auth/link/status', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Session-Id': sessionId
+                },
+                body: JSON.stringify({ user: this.user, session_id: sessionId }),
+                credentials: 'include'
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.isLinked && data.linkedPlayer) {
+                  this.isLinked = true;
+                  this.linkedPlayer = data.linkedPlayer;
+                  clearInterval(this.timer);
+                  clearInterval(this.pollTimer);
+                  if (window.zlToast) window.zlToast(`Linked to ${data.linkedPlayer.minecraftUsername}!`);
+                }
+              }
+            } catch (e) {}
+          }, 3000);
+        },
+
         copyCommand() {
           const cmd = `/link ${this.linkCode}`;
           navigator.clipboard.writeText(cmd).then(() => {
@@ -608,31 +660,34 @@
             if (window.zlToast) window.zlToast('Command copied to clipboard');
             setTimeout(() => { this.copied = false; }, 2000);
           }).catch(() => {
-            if (window.zlToast) window.zlToast('Command copied');
+            if (window.zlToast) window.zlToast('Command copied: ' + cmd);
           });
         },
 
         async unlinkAccount() {
           if (!confirm('Are you sure you want to unlink your Minecraft account?')) return;
-          if (this.user && this.user.isDemo) {
-            localStorage.removeItem('battlepie_demo_linked');
-            localStorage.removeItem('battlepie_demo_player');
-            this.isLinked = false;
-            this.linkedPlayer = null;
-            await this.generateNewCode();
-            if (window.zlToast) window.zlToast('Minecraft account unlinked');
-            return;
-          }
           try {
-            const backend = localStorage.getItem('battlepie_backend_url') || '';
-            const res = await fetch((backend ? backend : '') + '/api/auth/link/unlink', { method: 'POST', credentials: 'include' });
+            const api = getApiBase();
+            const sessionId = localStorage.getItem('battlepie_session_id') || '';
+            const res = await fetch(api + '/api/auth/link/unlink', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Session-Id': sessionId
+              },
+              body: JSON.stringify({ user: this.user, session_id: sessionId }),
+              credentials: 'include'
+            });
             if (res.ok) {
               this.isLinked = false;
               this.linkedPlayer = null;
               await this.generateNewCode();
+              this.startPolling();
               if (window.zlToast) window.zlToast('Minecraft account unlinked');
             }
-          } catch (e) {}
+          } catch (e) {
+            console.error('Error unlinking:', e);
+          }
         }
       };
     }

@@ -1,5 +1,5 @@
 name: BattlepieLink
-version: 1.0.0
+version: 1.1.0
 main: net.battlepie.link.BattlepieLinkPlugin
 api-version: '1.20'
 author: Battlepie Network
@@ -9,4 +9,7 @@ commands:
   link:
     description: Link your Minecraft account with your Battlepie Discord
     usage: /link <8-digit code>
-    permission-message: You do not have permission to use this command.
+  battlepielink:
+    description: Manage BattlepieLink plugin
+    usage: /battlepielink reload
+    permission: battlepie.admin

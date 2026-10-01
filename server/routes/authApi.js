@@ -51,13 +51,44 @@ function getDiscordAvatarUrl(user) {
 // Get active session if user has logged in
 function getSession(req) {
   loadSessions();
-  const sessionId = req.cookies && req.cookies['zl-user'];
-  if (!sessionId) {
-    return null;
-  }
-  // Strictly return the matching session only
-  if (sessions.has(sessionId)) {
+  const sessionId = (req.cookies && req.cookies['zl-user'])
+    || (req.headers && req.headers['x-session-id'])
+    || (req.query && req.query.session_id)
+    || (req.headers && req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
+
+  if (sessionId && sessions.has(sessionId)) {
     return sessions.get(sessionId);
+  }
+
+  // Also support authenticated Discord user profile passed in body
+  if (req.body && req.body.user) {
+    const u = req.body.user;
+    if (u.id) return u;
+    if (u.username) {
+      u.id = 'usr_' + u.username.toLowerCase();
+      return u;
+    }
+  }
+  // Also support authenticated Discord user profile passed in query string (?user=...)
+  if (req.query && req.query.user) {
+    try {
+      const u = typeof req.query.user === 'string' ? JSON.parse(decodeURIComponent(req.query.user)) : req.query.user;
+      if (u) {
+        if (u.id) return u;
+        if (u.username) {
+          u.id = 'usr_' + u.username.toLowerCase();
+          return u;
+        }
+      }
+    } catch (e) {}
+  }
+  // Also support ?user_id=...
+  if (req.query && req.query.user_id) {
+    return {
+      id: req.query.user_id,
+      username: req.query.username || 'DiscordUser',
+      global_name: req.query.global_name || req.query.username || 'DiscordUser'
+    };
   }
   return null;
 }
@@ -276,10 +307,17 @@ router.get('/me', (req, res) => {
 // 3. MINECRAFT LINKING ENGINE (CRACK + PREMIUM + BEDROCK PE)
 // =========================================================================
 
-// GET /api/auth/link/status
-router.get('/link/status', (req, res) => {
-  const user = getSession(req);
-  if (!user) {
+// GET & POST /api/auth/link/status
+router.all('/link/status', (req, res) => {
+  let user = getSession(req);
+  if (!user && req.query.user) {
+    try { user = JSON.parse(decodeURIComponent(req.query.user)); } catch (e) {}
+  }
+  if (!user && req.body && req.body.user) {
+    user = req.body.user;
+  }
+
+  if (!user || !user.id) {
     return res.json({
       authenticated: false,
       user: null,
@@ -308,14 +346,22 @@ router.get('/link/status', (req, res) => {
   });
 });
 
-// POST /api/auth/link/generate-code
-// Generates a new 8-digit code with 180s (3m 00s) countdown
-router.post('/link/generate-code', (req, res) => {
-  const user = getSession(req);
-  if (!user) {
+// GET & POST /api/auth/link/generate-code
+// Generates a new 8-digit code with 120s countdown
+router.all('/link/generate-code', (req, res) => {
+  let user = getSession(req);
+  if (!user && req.query.user) {
+    try { user = JSON.parse(decodeURIComponent(req.query.user)); } catch (e) {}
+  }
+  if (!user && req.body && req.body.user) {
+    user = req.body.user;
+  }
+
+  if (!user || !user.id) {
     return res.status(401).json({ error: 'Please log in with Discord first' });
   }
-  // Force generate a fresh 8-digit code (1 min expiry)
+
+  // Force generate a fresh 8-digit code
   const codeEntry = PlayerLinkService.createLinkCode(user, true);
 
   res.json({
@@ -332,13 +378,15 @@ router.post('/link/generate-code', (req, res) => {
 // Real-time notification stream for /me page when in-game /link executes
 router.get('/link/events', (req, res) => {
   const user = getSession(req);
-  if (!user) {
+  if (!user || !user.id) {
     return res.status(401).end();
   }
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.flushHeaders && res.flushHeaders();
 
   PlayerLinkService.addSseClient(user.id, res);
@@ -398,10 +446,10 @@ router.post('/link/verify', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/auth/link/unlink
-router.post('/link/unlink', (req, res) => {
+// POST & GET /api/auth/link/unlink
+router.all('/link/unlink', (req, res) => {
   const user = getSession(req);
-  if (!user) {
+  if (!user || !user.id) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const success = PlayerLinkService.unlink(user.id);
