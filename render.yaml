@@ -24,4 +24,4 @@ services:
       - key: DISCORD_CLIENT_SECRET
         value: U9oUs61e2dEby7ikapN80tQ0ZT3aabJ1
       - key: DISCORD_INVITE
-        value: battlepie
+        value: mineorange

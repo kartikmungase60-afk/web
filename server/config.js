@@ -26,7 +26,7 @@ module.exports = {
   // Discord Configuration
   discord: {
     inviteCode: process.env.DISCORD_INVITE || 'mineorange',
-    guildId: process.env.DISCORD_GUILD_ID || '',
+    guildId: process.env.DISCORD_GUILD_ID || '1545338483886002186',
     clientId: process.env.DISCORD_CLIENT_ID || '1555211386198696049',
     clientSecret: process.env.DISCORD_CLIENT_SECRET || 'U9oUs61e2dEby7ikapN80tQ0ZT3aabJ1',
     redirectUri: process.env.DISCORD_REDIRECT_URI || 'https://mineorange.fun/auth/discord/callback',
