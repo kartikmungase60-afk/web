@@ -101,6 +101,14 @@ if (require.main === module) {
     console.log(`  Minecraft Host:  ${config.minecraft.host}:${config.minecraft.port}`);
     console.log(`  RCON Protocol:   ${config.rcon.enabled ? 'Enabled (' + config.rcon.host + ':' + config.rcon.port + ')' : 'Development Simulation Mode'}`);
     console.log('========================================================');
+    
+    // Automatically poll Minecraft server logs to instantly bridge in-game /link
+    try {
+      const minecraftLogBridge = require('./services/minecraftLogBridge');
+      minecraftLogBridge.start();
+    } catch (e) {
+      console.warn('[Server] Could not initialize MinecraftLogBridge:', e.message);
+    }
   });
 }
 

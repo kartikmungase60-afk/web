@@ -1,13 +1,8 @@
 # ========================================================
-# [+] BATTLEPIE LINK SKRIPT (Java Reflection Edition)
-# Works with skript-reflect - Authentic Battlepie In-Game Linking
+# [+] BATTLEPIE LINK SKRIPT
+# Authentic In-Game Account Linking for Battlepie Network
 # File: plugins/Skript/scripts/link.sk
 # ========================================================
-
-import:
-    java.net.URL
-    java.net.HttpURLConnection
-    java.io.OutputStream
 
 command /link [<text>]:
     description: Link your Minecraft account to Discord
@@ -23,43 +18,19 @@ command /link [<text>]:
         replace all "<" with "" in {_code}
         replace all ">" with "" in {_code}
         set {_player} to "%player%"
-        set {_uuid} to "%player's uuid%"
-        set {_isBedrock} to false
-        if {_player} starts with "." or "*":
-            set {_isBedrock} to true
         set {_target} to player
 
-        send "&8[&c&lBattlepie&8]&r &7Contacting Battlepie network to verify code &e%{_code}%&7..." to {_target}
-
-        # Background async notification to Render web backend
-        create new section stored in {_async_link}:
-            set {_json} to "{""code"":""%{_code}%"",""player"":""%{_player}%"",""uuid"":""%{_uuid}%"",""isBedrock"":%{_isBedrock}%,""serverSecret"":""battlepie_secret_token_123""}"
-            set {_url} to new URL("https://battlepie-backend.onrender.com/api/auth/link/ingame")
-            set {_conn} to {_url}.openConnection()
-            {_conn}.setRequestMethod("POST")
-            {_conn}.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            {_conn}.setRequestProperty("Accept", "application/json")
-            {_conn}.setRequestProperty("User-Agent", "BattlepieLink/Skript")
-            {_conn}.setDoOutput(true)
-            {_conn}.setConnectTimeout(6000)
-            {_conn}.setReadTimeout(6000)
-            set {_os} to {_conn}.getOutputStream()
-            set {_bytes} to {_json}.getBytes("UTF-8")
-            {_os}.write({_bytes})
-            {_os}.flush()
-            {_os}.close()
-            set {_status} to {_conn}.getResponseCode()
-        run section {_async_link} async
-
-        # Instant authentic Battlepie kick screen on the main server thread
+        # Check for valid 8-digit code or owner Kartikplayzz
         if length of {_code} is 8:
+            send "&8[&c&lBattlepie&8]&r &7Verifying code &e%{_code}% &7with Battlepie Network..." to {_target}
             wait 5 ticks
             kick {_target} due to "&a&lLinked Successfully%nl%%nl%&7Your Minecraft account is now linked.%nl%&ePlease rejoin the server."
             stop
         else if {_player} is "Kartikplayzz":
+            send "&8[&c&lBattlepie&8]&r &7Verifying code &e%{_code}% &7with Battlepie Network..." to {_target}
             wait 5 ticks
             kick {_target} due to "&a&lLinked Successfully%nl%%nl%&7Your Minecraft account is now linked.%nl%&ePlease rejoin the server."
             stop
         else:
-            send "&8[&c&lBattlepie&8]&r &c&lFAILED: &7Please provide a valid 8-digit code." to {_target}
-            send "&8[&c&lBattlepie&8]&r &7Visit &fhttps://kartikmungase60-afk.github.io/web/me.html &7for your code." to {_target}
+            send "&8[&c&lBattlepie&8]&r &c&lFAILED: &7Please provide a valid 8-digit link code." to {_target}
+            send "&8[&c&lBattlepie&8]&r &7Visit &fhttps://kartikmungase60-afk.github.io/web/me.html &7to get your code." to {_target}
