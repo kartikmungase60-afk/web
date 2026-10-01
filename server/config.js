@@ -27,7 +27,7 @@ module.exports = {
   discord: {
     inviteCode: process.env.DISCORD_INVITE || 'battlepie',
     guildId: process.env.DISCORD_GUILD_ID || '',
-    clientId: process.env.DISCORD_CLIENT_ID || '1512866835899613314',
+    clientId: process.env.DISCORD_CLIENT_ID || '1554913871825735831',
     clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
     redirectUri: process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback',
   },

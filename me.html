@@ -337,8 +337,35 @@
         authenticated: false,
         user: null,
         async init() {
+          // 1. Check URL parameters (?user=...)
+          const urlParams = new URLSearchParams(window.location.search);
+          const userParam = urlParams.get('user');
+          if (userParam) {
+            try {
+              const u = JSON.parse(decodeURIComponent(userParam));
+              if (u && u.username) {
+                this.authenticated = true;
+                this.user = u;
+                return;
+              }
+            } catch (e) {}
+          }
+          // 2. Check localStorage
           try {
-            const res = await fetch('/api/auth/me');
+            const cached = localStorage.getItem('battlepie_client_user');
+            if (cached) {
+              const u = JSON.parse(cached);
+              if (u && u.username) {
+                this.authenticated = true;
+                this.user = u;
+                return;
+              }
+            }
+          } catch (e) {}
+          // 3. Check backend endpoint
+          try {
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            const res = await fetch((backend ? backend : '') + '/api/auth/me', { credentials: 'include' });
             if (res.ok) {
               const data = await res.json();
               if (data.authenticated && data.user) {
@@ -352,13 +379,16 @@
           this.user = null;
         },
         async logout() {
+          localStorage.removeItem('battlepie_client_user');
+          localStorage.removeItem('battlepie_session_id');
           try {
             document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-            await fetch('/auth/logout', { method: 'POST', headers: { Accept: 'application/json' } });
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            await fetch((backend ? backend : '') + '/auth/logout', { method: 'POST', headers: { Accept: 'application/json' }, credentials: 'include' });
           } catch (e) {}
-          window.location.href = '/me?logged_out=' + Date.now();
+          window.location.href = 'me.html?logged_out=' + Date.now();
         }
       };
     }
@@ -400,11 +430,13 @@
 
         async logout() {
           localStorage.removeItem('battlepie_client_user');
+          localStorage.removeItem('battlepie_session_id');
           try {
             document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = 'zl-user=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-            await fetch('/auth/logout', { method: 'POST', headers: { Accept: 'application/json' } });
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            await fetch((backend ? backend : '') + '/auth/logout', { method: 'POST', headers: { Accept: 'application/json' }, credentials: 'include' });
           } catch (e) {}
           window.location.href = 'me.html?logged_out=' + Date.now();
         },
@@ -419,6 +451,28 @@
         },
 
         async init() {
+          // Check if returning from OAuth redirect with auth=success & user=...
+          const urlParams = new URLSearchParams(window.location.search);
+          const userParam = urlParams.get('user');
+          const sessionId = urlParams.get('session_id');
+          if (urlParams.get('auth') === 'success' && userParam) {
+            try {
+              const u = JSON.parse(decodeURIComponent(userParam));
+              if (u && u.username) {
+                localStorage.setItem('battlepie_client_user', JSON.stringify(u));
+                if (sessionId) localStorage.setItem('battlepie_session_id', sessionId);
+                document.cookie = "zl-user=" + (sessionId || 'usr_online') + "; path=/; max-age=2592000";
+                this.user = u;
+                this.authenticated = true;
+                if (window.zlToast) window.zlToast('Welcome, @' + (u.global_name || u.username) + '!');
+                // Clean the query parameters from URL cleanly
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
+            } catch (e) {
+              console.error('Error parsing returning OAuth user:', e);
+            }
+          }
+
           await this.loadStatus();
           if (this.authenticated && !this.isLinked) {
             this.startCountdown();
@@ -428,7 +482,7 @@
 
         async loadStatus() {
           this.loading = true;
-          // Check local client-side storage first (for GitHub Pages demo/static mode)
+          // Check local client-side storage first (for GitHub Pages / static mode)
           try {
             const cached = localStorage.getItem('battlepie_client_user');
             if (cached) {
@@ -441,13 +495,32 @@
                 this.linkCode = 'BATTLE-8492';
                 this.secondsLeft = 120;
                 this.loading = false;
+
+                // Also check live backend if available
+                const backend = localStorage.getItem('battlepie_backend_url') || '';
+                try {
+                  const res = await fetch((backend ? backend : '') + '/api/auth/link/status', { credentials: 'include' });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.authenticated && data.user) {
+                      this.user = data.user;
+                      this.isLinked = Boolean(data.isLinked);
+                      this.linkedPlayer = data.linkedPlayer;
+                      if (data.activeCode) {
+                        this.linkCode = data.activeCode.code;
+                        this.secondsLeft = data.activeCode.expiresInSeconds || 120;
+                      }
+                    }
+                  }
+                } catch(e) {}
                 return;
               }
             }
           } catch (err) {}
 
           try {
-            const res = await fetch('/api/auth/link/status');
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            const res = await fetch((backend ? backend : '') + '/api/auth/link/status', { credentials: 'include' });
             if (res.ok) {
               const data = await res.json();
               this.authenticated = Boolean(data.authenticated);
@@ -500,7 +573,8 @@
             return;
           }
           try {
-            const res = await fetch('/api/auth/link/generate-code', { method: 'POST' });
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            const res = await fetch((backend ? backend : '') + '/api/auth/link/generate-code', { method: 'POST', credentials: 'include' });
             if (res.ok) {
               const data = await res.json();
               if (data.code) {
@@ -524,7 +598,8 @@
           if (!this.authenticated || (this.user && this.user.isDemo)) return;
           try {
             if (this.sseSource) this.sseSource.close();
-            this.sseSource = new EventSource('/api/auth/link/events');
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            this.sseSource = new EventSource((backend ? backend : '') + '/api/auth/link/events');
             this.sseSource.onmessage = (e) => {
               try {
                 const data = JSON.parse(e.data);
@@ -566,7 +641,8 @@
             return;
           }
           try {
-            const res = await fetch('/api/auth/link/unlink', { method: 'POST' });
+            const backend = localStorage.getItem('battlepie_backend_url') || '';
+            const res = await fetch((backend ? backend : '') + '/api/auth/link/unlink', { method: 'POST', credentials: 'include' });
             if (res.ok) {
               this.isLinked = false;
               this.linkedPlayer = null;

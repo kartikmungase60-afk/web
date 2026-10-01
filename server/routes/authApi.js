@@ -66,14 +66,35 @@ function getSession(req) {
 // 1. DISCORD OAUTH2 ENDPOINTS
 // =========================================================================
 
+// Helper to determine the effective redirect URI
+function getEffectiveRedirectUri(req) {
+  // If explicitly configured to a custom domain (non-localhost) via env, respect it
+  if (process.env.DISCORD_REDIRECT_URI && !process.env.DISCORD_REDIRECT_URI.includes('localhost')) {
+    return process.env.DISCORD_REDIRECT_URI;
+  }
+  // Otherwise dynamically compute protocol + host (handles Render, Railway, localhost, etc.)
+  const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : req.protocol || 'http');
+  const host = req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3000';
+  return `${proto}://${host}/auth/discord/callback`;
+}
+
 // GET /auth/discord
 // Initiates official Discord OAuth2 authorization redirect directly
 router.get('/discord', (req, res) => {
-  const state = crypto.randomBytes(16).toString('hex');
-  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 10 * 60 * 1000 });
+  const returnTo = req.query.return_to || '';
+  const statePayload = {
+    csrf: crypto.randomBytes(12).toString('hex'),
+    return_to: returnTo
+  };
+  const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
 
-  const clientId = config.discord.clientId || '1554913871825735831';
-  const redirectUri = encodeURIComponent(config.discord.redirectUri);
+  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 10 * 60 * 1000 });
+  if (returnTo) {
+    res.cookie('oauth_return_to', returnTo, { maxAge: 10 * 60 * 1000, httpOnly: false });
+  }
+
+  const clientId = config.discord.clientId || process.env.DISCORD_CLIENT_ID || '1554913871825735831';
+  const redirectUri = encodeURIComponent(getEffectiveRedirectUri(req));
   const scope = encodeURIComponent('identify');
   const promptParam = req.query.prompt ? `&prompt=${encodeURIComponent(req.query.prompt)}` : '';
   
@@ -87,26 +108,50 @@ router.get('/discord', (req, res) => {
 router.get('/discord/callback', async (req, res) => {
   const { code, state, error, error_description } = req.query;
 
+  // Extract return_to from state or cookie
+  let returnTo = null;
+  if (state) {
+    try {
+      const decoded = JSON.parse(Buffer.from(state, 'base64url').toString('utf8'));
+      if (decoded && decoded.return_to) {
+        returnTo = decoded.return_to;
+      }
+    } catch (e) {}
+  }
+  if (!returnTo && req.cookies && req.cookies.oauth_return_to) {
+    returnTo = req.cookies.oauth_return_to;
+  }
+
+  const sendErrorRedirect = (msg) => {
+    if (returnTo) {
+      const sep = returnTo.includes('?') ? '&' : '?';
+      return res.redirect(`${returnTo}${sep}error=${encodeURIComponent(msg)}`);
+    }
+    return res.redirect(`/me.html?error=${encodeURIComponent(msg)}`);
+  };
+
   if (error || !code) {
     console.error('[Discord OAuth Error]', error, error_description);
-    return res.redirect(`/me?error=${encodeURIComponent(error_description || 'Discord authorization canceled')}`);
+    return sendErrorRedirect(error_description || 'Discord authorization canceled');
   }
 
   try {
     if (!config.discord.clientSecret) {
-      throw new Error('Discord Client Secret is missing in .env');
+      throw new Error('Discord Client Secret is missing in server environment');
     }
+
+    const redirectUri = getEffectiveRedirectUri(req);
 
     // Exchange Code for Access Token
     const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: config.discord.clientId,
+        client_id: config.discord.clientId || process.env.DISCORD_CLIENT_ID || '1554913871825735831',
         client_secret: config.discord.clientSecret,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: config.discord.redirectUri
+        redirect_uri: redirectUri
       })
     });
 
@@ -139,10 +184,15 @@ router.get('/discord/callback', async (req, res) => {
     sessions.set(sessionId, sessionUser);
     saveSessions();
     res.cookie('zl-user', sessionId, { path: '/', httpOnly: false, maxAge: 30 * 24 * 60 * 60 * 1000 });
-    return res.redirect('/me?auth=success');
+
+    if (returnTo) {
+      const sep = returnTo.includes('?') ? '&' : '?';
+      return res.redirect(`${returnTo}${sep}auth=success&session_id=${sessionId}&user=${encodeURIComponent(JSON.stringify(sessionUser))}`);
+    }
+    return res.redirect('/me.html?auth=success');
   } catch (err) {
     console.error('[Discord OAuth Callback Error]', err.message);
-    res.redirect(`/me?error=${encodeURIComponent(err.message)}`);
+    return sendErrorRedirect(err.message);
   }
 });
 
@@ -152,15 +202,21 @@ router.get('/quick-login', (req, res) => {
   const sessionUser = {
     id: '768387330485518376',
     username: 'kartikplayzz1',
-    global_name: 'Kartik...',
-    avatarUrl: 'https://cdn.discordapp.com/avatars/768387330485518376/7cc5d375ddea98426cd718f152a0dbd8.png?size=128',
+    global_name: 'Kartik Playzz',
+    avatarUrl: 'https://battlepie.net/uploads/logo-1783260029774.png',
     discriminator: '0',
     joinedAt: new Date().toISOString()
   };
   sessions.set(sessionId, sessionUser);
   saveSessions();
   res.cookie('zl-user', sessionId, { path: '/', httpOnly: false, maxAge: 30 * 24 * 60 * 60 * 1000 });
-  return res.redirect('/me?auth=success');
+
+  const returnTo = req.query.return_to;
+  if (returnTo) {
+    const sep = returnTo.includes('?') ? '&' : '?';
+    return res.redirect(`${returnTo}${sep}auth=success&session_id=${sessionId}&user=${encodeURIComponent(JSON.stringify(sessionUser))}`);
+  }
+  return res.redirect('/me.html?auth=success');
 });
 
 // GET & POST /auth/logout
@@ -190,7 +246,9 @@ const handleLogout = (req, res) => {
   if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
     return res.json({ success: true, authenticated: false });
   }
-  return res.redirect('/me?logged_out=' + Date.now());
+  const returnTo = req.query.return_to || '/me.html';
+  const sep = returnTo.includes('?') ? '&' : '?';
+  return res.redirect(`${returnTo}${sep}logged_out=` + Date.now());
 };
 
 router.get('/logout', handleLogout);

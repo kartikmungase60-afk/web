@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: battlepie-network
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MC_HOST
+        value: play.battlepie.net
+      - key: MC_PORT
+        value: 25565
+      - key: MC_BEDROCK_PORT
+        value: 19132
+      - key: SERVER_SECRET
+        value: battlepie_secret_token_123
+      - key: DISCORD_CLIENT_ID
+        value: 1554913871825735831
+      - key: DISCORD_CLIENT_SECRET
+        value: LxV1_ZVa8EtXVhv5SEk6E_8OPL0dNJUM
+      - key: DISCORD_INVITE
+        value: battlepie

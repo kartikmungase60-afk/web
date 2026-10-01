@@ -10,6 +10,8 @@ package-lock.json
 
 # Local Minecraft Test Server (large binary directory & world data)
 tools/local-mc-server/
+tools/local-mc-server.zip
+tools/*.zip
 tools/minecraft/build/
 tools/minecraft/paper-api.jar
 
@@ -33,3 +35,4 @@ yarn-error.log*
 Thumbs.db
 ehthumbs.db
 desktop.ini
+do-commit-push.bat
