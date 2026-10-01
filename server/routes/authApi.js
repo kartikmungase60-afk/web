@@ -99,9 +99,10 @@ function getSession(req) {
 
 // Helper to determine the effective redirect URI
 function getEffectiveRedirectUri(req) {
-  // If explicitly configured to a custom domain (non-localhost) via env, respect it
-  if (process.env.DISCORD_REDIRECT_URI && !process.env.DISCORD_REDIRECT_URI.includes('localhost')) {
-    return process.env.DISCORD_REDIRECT_URI;
+  // If explicitly configured in env or config with a production domain, use it
+  const explicit = process.env.DISCORD_REDIRECT_URI || (config.discord && config.discord.redirectUri);
+  if (explicit && !explicit.includes('localhost')) {
+    return explicit;
   }
   // Otherwise dynamically compute protocol + host (handles Render, Railway, localhost, etc.)
   const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : req.protocol || 'http');
@@ -154,11 +155,11 @@ router.get('/discord/callback', async (req, res) => {
   }
 
   const sendErrorRedirect = (msg) => {
-    if (returnTo) {
+    if (returnTo && !returnTo.includes('/login')) {
       const sep = returnTo.includes('?') ? '&' : '?';
       return res.redirect(`${returnTo}${sep}error=${encodeURIComponent(msg)}`);
     }
-    return res.redirect(`/me.html?error=${encodeURIComponent(msg)}`);
+    return res.redirect(`/login.html?error=${encodeURIComponent(msg)}`);
   };
 
   if (error || !code) {
@@ -216,11 +217,13 @@ router.get('/discord/callback', async (req, res) => {
     saveSessions();
     res.cookie('zl-user', sessionId, { path: '/', httpOnly: false, maxAge: 30 * 24 * 60 * 60 * 1000 });
 
-    if (returnTo) {
-      const sep = returnTo.includes('?') ? '&' : '?';
-      return res.redirect(`${returnTo}${sep}auth=success&session_id=${sessionId}&user=${encodeURIComponent(JSON.stringify(sessionUser))}`);
+    // Never loop back to /login or /login.html
+    let finalReturnTo = '/me.html';
+    if (returnTo && !returnTo.includes('/login')) {
+      finalReturnTo = returnTo;
     }
-    return res.redirect('/me.html?auth=success');
+    const sep = finalReturnTo.includes('?') ? '&' : '?';
+    return res.redirect(`${finalReturnTo}${sep}auth=success&session_id=${sessionId}&user=${encodeURIComponent(JSON.stringify(sessionUser))}`);
   } catch (err) {
     console.error('[Discord OAuth Callback Error]', err.message);
     return sendErrorRedirect(err.message);

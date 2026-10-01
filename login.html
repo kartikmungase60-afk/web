@@ -102,17 +102,38 @@
   <script>
     // Live Cloud Backend on Vercel / Custom Domain / Local
     const BACKEND_URL = window.location.origin;
+    const urlParams = new URLSearchParams(window.location.search);
 
-    // Show error notice if returning with error query param
-    const err = new URLSearchParams(window.location.search).get('error');
+    // 1. If returning from successful Discord OAuth, persist session and forward to account
+    if (urlParams.get('auth') === 'success') {
+      localStorage.removeItem('battlepie_logged_out');
+      const userParam = urlParams.get('user');
+      const sessionId = urlParams.get('session_id');
+      if (userParam) {
+        try {
+          const u = JSON.parse(decodeURIComponent(userParam));
+          localStorage.setItem('battlepie_client_user', JSON.stringify(u));
+          if (sessionId) localStorage.setItem('battlepie_session_id', sessionId);
+          document.cookie = "zl-user=" + (sessionId || 'usr_online') + "; path=/; max-age=2592000";
+        } catch (e) {}
+      }
+      window.location.replace('/me.html');
+    }
+
+    // 2. Show error notice if returning with error query param
+    const err = urlParams.get('error');
     if (err) {
       document.getElementById('errorBox').classList.remove('hidden');
-      document.getElementById('errorText').textContent = err;
+      document.getElementById('errorText').textContent = decodeURIComponent(err);
     }
 
     function startDiscordOAuth() {
       localStorage.removeItem('battlepie_logged_out');
-      const returnUrl = window.location.origin + window.location.pathname.replace('login.html', 'me.html');
+      const customReturn = urlParams.get('return_to');
+      let returnUrl = window.location.origin + '/me.html';
+      if (customReturn && !customReturn.includes('/login')) {
+        returnUrl = customReturn;
+      }
       window.location.href = `${BACKEND_URL}/auth/discord?return_to=${encodeURIComponent(returnUrl)}`;
     }
 
