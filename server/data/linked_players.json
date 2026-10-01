@@ -9,10 +9,11 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": null,
-    "skinSource": "Default / Mojang",
-    "avatarUrl": "https://mc-heads.net/avatar/Kartikplayzz/128",
-    "skinUrl": "https://mc-heads.net/body/Kartikplayzz/right",
-    "linkedAt": "2026-10-01T09:26:50.066Z"
+    "skinName": "sr-recommendation-boy-blue-sweater",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-blue-sweater)",
+    "avatarUrl": "https://mc-heads.net/avatar/607adff9afdfd779d99f4dfd348d2c8d2d28abd9663b75e1f6616e2c79bbb3eb/128",
+    "skinUrl": "https://mc-heads.net/body/607adff9afdfd779d99f4dfd348d2c8d2d28abd9663b75e1f6616e2c79bbb3eb/right",
+    "linkedAt": "2026-10-01T09:52:32.444Z",
+    "lastSkinUpdate": "2026-10-01T09:52:33.238Z"
   }
 ]

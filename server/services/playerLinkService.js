@@ -343,6 +343,67 @@ class PlayerLinkService {
     return linkedPlayers.get(discordId) || null;
   }
 
+  // Get link by Minecraft username
+  static getLinkByUsername(username) {
+    if (!username) return null;
+    loadLinks();
+    const discordId = mcToDiscord.get(username.toLowerCase());
+    if (discordId) {
+      return linkedPlayers.get(discordId) || null;
+    }
+    for (const item of linkedPlayers.values()) {
+      if (item.minecraftUsername && item.minecraftUsername.toLowerCase() === username.toLowerCase()) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  // Get all linked players
+  static getAllLinks() {
+    loadLinks();
+    return Array.from(linkedPlayers.values());
+  }
+
+  // Update skin for a player dynamically
+  static updatePlayerSkin(discordId, { skinUrl, avatarUrl, skinName, skinSource }) {
+    loadLinks();
+    const link = linkedPlayers.get(discordId);
+    if (!link) return false;
+
+    let changed = false;
+    if (skinUrl && link.skinUrl !== skinUrl) {
+      link.skinUrl = skinUrl;
+      changed = true;
+    }
+    if (avatarUrl && link.avatarUrl !== avatarUrl) {
+      link.avatarUrl = avatarUrl;
+      changed = true;
+    }
+    if (skinName !== undefined && link.skinName !== skinName) {
+      link.skinName = skinName;
+      changed = true;
+    }
+    if (skinSource !== undefined && link.skinSource !== skinSource) {
+      link.skinSource = skinSource;
+      changed = true;
+    }
+
+    if (changed) {
+      link.lastSkinUpdate = new Date().toISOString();
+      linkedPlayers.set(discordId, link);
+      saveLinks();
+
+      // Emit live SSE update to the web browser
+      PlayerLinkService.notifySse(discordId, {
+        event: 'skin_updated',
+        player: link
+      });
+      console.log(`[PlayerLinkService] Dynamic skin updated for ${link.minecraftUsername}: ${skinUrl}`);
+    }
+    return changed;
+  }
+
   // Unlink an account
   static unlink(discordId) {
     const existing = linkedPlayers.get(discordId);

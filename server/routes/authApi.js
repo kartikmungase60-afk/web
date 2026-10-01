@@ -374,6 +374,41 @@ router.all('/link/generate-code', (req, res) => {
   });
 });
 
+// GET & POST /api/auth/link/refresh-skin
+// On-demand refresh of Minecraft player skin from SkinsRestorer
+router.all('/link/refresh-skin', async (req, res) => {
+  let user = getSession(req);
+  if (!user && req.query.user) {
+    try { user = JSON.parse(decodeURIComponent(req.query.user)); } catch (e) {}
+  }
+  if (!user && req.body && req.body.user) {
+    user = req.body.user;
+  }
+
+  if (!user || !user.id) {
+    return res.status(401).json({ error: 'Please log in with Discord first' });
+  }
+
+  const link = PlayerLinkService.getLinkStatus(user.id);
+  if (!link) {
+    return res.status(404).json({ error: 'No linked Minecraft account found' });
+  }
+
+  try {
+    const SkinsRestorerService = require('../services/skinsRestorerService');
+    const skinData = await SkinsRestorerService.fetchPlayerSkin(link.minecraftUuid, link.minecraftUsername);
+    if (skinData && skinData.skinUrl) {
+      PlayerLinkService.updatePlayerSkin(user.id, skinData);
+      const updated = PlayerLinkService.getLinkStatus(user.id);
+      return res.json({ success: true, updated: true, player: updated });
+    }
+  } catch (err) {
+    console.warn('[authApi] Error refreshing skin:', err.message);
+  }
+
+  return res.json({ success: true, updated: false, player: link });
+});
+
 // GET /api/auth/link/events (Server-Sent Events)
 // Real-time notification stream for /me page when in-game /link executes
 router.get('/link/events', (req, res) => {
