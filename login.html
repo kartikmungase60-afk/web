@@ -51,14 +51,14 @@
   <!-- Top Nav Minimal -->
   <header class="relative z-10 w-full border-b border-white/5 bg-[#07080b]/80 backdrop-blur-xl">
     <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2.5 font-bold text-base sm:text-lg">
+      <a href="index.html" class="flex items-center gap-2.5 font-bold text-base sm:text-lg">
         <img src="https://battlepie.net/uploads/logo-1783260029774.png" alt="Battlepie" class="w-8 h-8 rounded-lg object-cover shadow-md">
         <span class="tracking-tight text-white font-extrabold">Battlepie</span>
       </a>
       <div class="flex items-center gap-4 text-xs text-white/70">
-        <a href="/" class="hover:text-white transition">Home</a>
-        <a href="/store" class="hover:text-white transition">Web Store</a>
-        <a href="/me" class="hover:text-white transition">Account & Link</a>
+        <a href="index.html" class="hover:text-white transition">Home</a>
+        <a href="store.html" class="hover:text-white transition">Web Store</a>
+        <a href="me.html" class="hover:text-white transition">Account & Link</a>
       </div>
     </div>
   </header>
@@ -88,7 +88,7 @@
 
       <!-- Primary Action: Login with Discord -->
       <div class="space-y-3">
-        <a href="/auth/discord" 
+        <a id="btnDiscord" href="/auth/discord" 
            class="w-full py-3.5 px-4 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white font-semibold text-sm flex items-center justify-center gap-3 transition shadow-lg shadow-[#5865F2]/25 group cursor-pointer">
           <svg class="w-5 h-5 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
             <path d="M20.317 4.37a19.91 19.91 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 0 0-5.487 0c-.164-.39-.404-.874-.617-1.249a.077.077 0 0 0-.08-.037A19.74 19.74 0 0 0 3.678 4.37a.07.07 0 0 0-.032.027C.534 9.046-.321 13.58.099 18.057a.082.082 0 0 0 .031.055 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.027c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.076.076 0 0 0-.04.107c.36.698.772 1.363 1.225 1.993a.077.077 0 0 0 .084.028 19.86 19.86 0 0 0 6-3.03.077.077 0 0 0 .031-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.335.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.156 2.42 0 1.334-.946 2.419-2.156 2.419zm7.974 0c-1.183 0-2.156-1.085-2.156-2.419 0-1.335.955-2.42 2.156-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.334-.946 2.419-2.157 2.419z"/>
@@ -103,8 +103,8 @@
         </div>
 
         <!-- Secondary Action: Local Dev Quick Login -->
-        <a href="/auth/quick-login" 
-           class="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/90 hover:text-white font-medium text-xs flex items-center justify-center gap-2.5 transition">
+        <a id="btnQuick" href="/auth/quick-login" 
+           class="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/90 hover:text-white font-medium text-xs flex items-center justify-center gap-2.5 transition cursor-pointer">
           <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
           </svg>
@@ -134,10 +134,48 @@
 
       <!-- Footer back link -->
       <div class="mt-6 text-center">
-        <a href="/" class="text-xs text-white/40 hover:text-white transition">← Return to Homepage</a>
+        <a href="index.html" class="text-xs text-white/40 hover:text-white transition">← Return to Homepage</a>
       </div>
     </div>
   </main>
+
+  <script>
+    const isStatic = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
+
+    function doClientLogin() {
+      const demoUser = {
+        id: "309155902",
+        username: "kartikplayzz1",
+        global_name: "Kartik Playzz",
+        avatarUrl: "https://battlepie.net/uploads/logo-1783260029774.png",
+        isDemo: true
+      };
+      localStorage.setItem('battlepie_client_user', JSON.stringify(demoUser));
+      document.cookie = "zl-user=" + encodeURIComponent(JSON.stringify(demoUser)) + "; path=/; max-age=86400";
+      window.location.href = "me.html";
+    }
+
+    document.getElementById('btnQuick').addEventListener('click', function(e) {
+      if (isStatic) {
+        e.preventDefault();
+        doClientLogin();
+      }
+    });
+
+    document.getElementById('btnDiscord').addEventListener('click', function(e) {
+      if (isStatic) {
+        e.preventDefault();
+        const proceed = confirm(
+          "📌 GitHub Pages Note:\n\n" +
+          "Live Discord OAuth requires a Node.js backend server. GitHub Pages provides static hosting.\n\n" +
+          "Click OK to sign in instantly as @kartikplayzz1 to test the full account and in-game link page on GitHub Pages!"
+        );
+        if (proceed) {
+          doClientLogin();
+        }
+      }
+    });
+  </script>
 
   <footer class="relative z-10 py-6 text-center text-xs text-white/30 border-t border-white/5">
     © 2026 Battlepie Network · All Rights Reserved
