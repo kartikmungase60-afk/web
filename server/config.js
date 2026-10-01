@@ -8,8 +8,8 @@ module.exports = {
   
   // Minecraft Server Ping target
   minecraft: {
-    host: process.env.MC_HOST || 'play.battlepie.net',
-    port: parseInt(process.env.MC_PORT || '25565', 10),
+    host: process.env.MC_HOST || 'Node1.mineorange.fun',
+    port: parseInt(process.env.MC_PORT || '25569', 10),
     bedrockPort: parseInt(process.env.MC_BEDROCK_PORT || '19132', 10),
     cacheSeconds: 15,
   },

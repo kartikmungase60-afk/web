@@ -288,7 +288,7 @@
     let copyTimer = null;
 
     card.addEventListener('click', async () => {
-      const ip = card.dataset.ip || 'play.battlepie.net';
+      const ip = card.dataset.ip || 'Node1.mineorange.fun:25569';
       let copied = false;
 
       try {

@@ -12,9 +12,9 @@ services:
       - key: PORT
         value: 10000
       - key: MC_HOST
-        value: play.battlepie.net
+        value: Node1.mineorange.fun
       - key: MC_PORT
-        value: 25565
+        value: 25569
       - key: MC_BEDROCK_PORT
         value: 19132
       - key: SERVER_SECRET

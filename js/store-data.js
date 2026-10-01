@@ -5,7 +5,8 @@
 
 const BATTLEPIE_DATA = {
   server: {
-    ip: "play.battlepie.net",
+    ip: "Node1.mineorange.fun:25569",
+    port: 25569,
     bedrockPort: 19132,
     defaultPlayersOnline: 319,
     defaultDiscordOnline: 2583,
