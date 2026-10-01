@@ -1,0 +1,60 @@
+# ========================================================
+# 🥧 BATTLEPIE NETWORK - IN-GAME ACCOUNT LINKING SKRIPT
+# File: plugins/Skript/scripts/battlepie_link.sk
+# ========================================================
+#
+# Requirements:
+# - Skript 2.6+ (Spigot / Paper / Purpur 1.8 - 1.21+)
+# - skript-reflect or skUtilities (for HTTP requests), or standard Skript 2.8+ http effects
+#
+# How it works:
+# 1. Player goes to https://battlepie.net/me (or your local web server)
+# 2. Player gets an 8-digit code (e.g. 95238934)
+# 3. Player types in-game: /link 95238934
+# 4. This script sends a POST request to your backend /api/auth/link/ingame
+# 5. Connects Crack, Premium, and Bedrock PE players instantly!
+# ========================================================
+
+options:
+    # Set this to your web server address (e.g. http://localhost:3000 or https://battlepie.net)
+    api_url: "http://localhost:3000/api/auth/link/ingame"
+    server_secret: "battlepie_secret_token_123"
+    prefix: "&8[&c&lBattlepie&8]&r"
+
+command /link [<text>]:
+    description: Link your Minecraft account to your Discord on the Battlepie web store
+    permission: battlepie.player
+    trigger:
+        if arg-1 is not set:
+            send "{@prefix} &cUsage: &e/link <8-digit code>" to player
+            send "{@prefix} &7Get your link code at: &fhttps://battlepie.net/me" to player
+            stop
+
+        set {_code} to arg-1
+        set {_player} to "%player%"
+        set {_uuid} to "%player's uuid%"
+        
+        # Check if player is Bedrock / Pocket Edition (Geyser/Floodgate prefix check)
+        set {_isBedrock} to false
+        if {_player} starts with "." or "*":
+            set {_isBedrock} to true
+
+        send "{@prefix} &7Contacting Battlepie network to verify code &e%{_code}%&7..." to player
+
+        # JSON Payload
+        set {_body} to "{""code"":""%{_code}%"",""player"":""%{_player}%"",""uuid"":""%{_uuid}%"",""isBedrock"":%{_isBedrock}%,""serverSecret"":""{@server_secret}""}"
+
+        # Send asynchronous HTTP request to Battlepie backend
+        send a "POST" request to "{@api_url}" with headers "Content-Type: application/json" and body {_body}
+        
+        set {_resp} to last http response's body
+        set {_status} to last http response's code
+
+        if {_status} is 200:
+            send "{@prefix} &a&lSUCCESS! &7Your account &f%{_player}% &7is now linked to Discord!" to player
+            send "{@prefix} &aYour community perks, ranks, and store purchases are now synchronized." to player
+            play sound "entity.player.levelup" with volume 1 and pitch 1 to player
+        else:
+            send "{@prefix} &c&lFAILED: &7Invalid or expired link code." to player
+            send "{@prefix} &7Please visit &fhttps://battlepie.net/me &7to generate a fresh 8-digit code." to player
+            play sound "entity.villager.no" with volume 1 and pitch 1 to player

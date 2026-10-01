@@ -1,0 +1,6 @@
+# BattlepieLink Plugin Configuration
+# Set api-url to your web server (use localhost for local testing, or https://yourdomain.com for production)
+api-url: "http://localhost:3000/api/auth/link/ingame"
+
+# Server secret token to authenticate requests from your Minecraft server to the website backend
+server-secret: "battlepie_secret_token_123"

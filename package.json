@@ -1,0 +1,26 @@
+{
+  "name": "battlepie-network",
+  "version": "1.0.0",
+  "description": "Full-stack reverse engineered Battlepie Minecraft network portal and store",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node server/test-api.js"
+  },
+  "keywords": [
+    "battlepie",
+    "minecraft",
+    "store",
+    "rcon",
+    "mojang"
+  ],
+  "author": "Battlepie Clone",
+  "license": "MIT",
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.5",
+    "express": "^4.19.2"
+  }
+}

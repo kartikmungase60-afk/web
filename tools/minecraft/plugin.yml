@@ -1,0 +1,12 @@
+name: BattlepieLink
+version: 1.0.0
+main: net.battlepie.link.BattlepieLinkPlugin
+api-version: '1.20'
+author: Battlepie Network
+description: Discord Account Linking Plugin for Battlepie Network (Cracked + Premium + Bedrock + SkinsRestorer)
+softdepend: [SkinsRestorer, Floodgate]
+commands:
+  link:
+    description: Link your Minecraft account with your Battlepie Discord
+    usage: /link <8-digit code>
+    permission-message: You do not have permission to use this command.

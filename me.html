@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en" class="dark h-full">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Account · Battlepie Network</title>
+  <meta name="description" content="Manage your Battlepie account and link your Minecraft player ID.">
+  <link rel="icon" href="https://battlepie.net/uploads/logo-1783260029774.png">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+  <style>
+    body {
+      background-color: #07080b;
+      color: #f3f4f6;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body class="min-h-full flex flex-col bg-[#07080b] selection:bg-[#ff2e1f] selection:text-white antialiased">
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <nav class="sticky top-0 z-40 w-full border-b border-white/5 bg-[#07080b]/90 backdrop-blur-xl" x-data="myAccountNav()" x-init="init()">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="index.html" class="flex items-center gap-2.5 font-display font-bold text-base sm:text-lg min-w-0">
+        <img src="https://battlepie.net/uploads/logo-1783260029774.png" alt="Battlepie" class="w-8 h-8 rounded-lg object-cover shadow-md">
+        <span class="tracking-tight text-white">Battlepie</span>
+      </a>
+
+      <!-- Center Desktop Nav Links -->
+      <div class="hidden md:flex items-center gap-6 text-sm text-white/70">
+        <a class="hover:text-white transition" href="index.html">Home</a>
+        <a class="hover:text-white transition" href="store.html">Store</a>
+        <a class="hover:text-white transition" href="https://discord.gg/battlepie" target="_blank" rel="noopener">Discord</a>
+      </div>
+
+      <!-- Right Navigation Actions -->
+      <div class="flex items-center gap-3">
+
+        <!-- Theme Toggle -->
+        <button type="button" class="theme-toggle" onclick="window.toggleTheme()" aria-label="Toggle theme">
+          <svg class="icon-sun" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+          </svg>
+          <svg class="icon-moon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Cart Button -->
+        <button type="button" onclick="document.dispatchEvent(new CustomEvent('zl:cart:open'));"
+                x-data="{ count: 0 }" x-init="document.addEventListener('zl:cart:count', e => count = e.detail.count);"
+                class="relative w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition"
+                aria-label="Open cart">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span x-show="count > 0" x-text="count" class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center shadow-lg"></span>
+        </button>
+
+        <!-- 1. If NOT Authenticated: Show "Login with Discord" Button -->
+        <template x-if="!authenticated">
+          <a href="/auth/discord" class="btn btn-accent text-sm px-3.5 sm:px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-lg shadow-red-500/20">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M20.317 4.37a19.91 19.91 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 0 0-5.487 0c-.164-.39-.404-.874-.617-1.249a.077.077 0 0 0-.08-.037A19.74 19.74 0 0 0 3.678 4.37a.07.07 0 0 0-.032.027C.534 9.046-.321 13.58.099 18.057a.082.082 0 0 0 .031.055 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.027c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.076.076 0 0 0-.04.107c.36.698.772 1.363 1.225 1.993a.077.077 0 0 0 .084.028 19.86 19.86 0 0 0 6-3.03.077.077 0 0 0 .031-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.335.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.156 2.42 0 1.334-.946 2.419-2.156 2.419zm7.974 0c-1.183 0-2.156-1.085-2.156-2.419 0-1.335.955-2.42 2.156-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.334-.946 2.419-2.157 2.419z"/></svg>
+            <span class="hidden sm:inline">Login with Discord</span>
+            <span class="sm:hidden">Login</span>
+          </a>
+        </template>
+
+        <!-- 2. If Authenticated: Show Discord User Pill with Dropdown -->
+        <template x-if="authenticated && user">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" type="button"
+                    class="flex items-center gap-2 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition text-sm">
+              <img :src="user.avatarUrl" alt="" class="w-6 h-6 rounded-md object-cover ring-1 ring-white/20">
+              <span class="font-medium text-white/90 truncate max-w-[110px]" x-text="'@' + user.username"></span>
+              <svg class="w-3.5 h-3.5 text-white/50 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div x-show="open" @click.outside="open = false" x-cloak
+                 class="dropdown-menu absolute right-0 mt-2 w-48 rounded-xl bg-[#0b0f18] border border-white/10 shadow-2xl py-1.5 z-50 text-xs">
+              <div class="px-3 py-2 border-b border-white/5">
+                <div class="font-bold text-white truncate" x-text="user.global_name || user.username"></div>
+                <div class="font-mono text-[10px] text-white/40" x-text="'Discord ID: ' + user.id"></div>
+              </div>
+              <a href="me.html" class="block px-3 py-2 hover:bg-white/5 text-white/90">My Account</a>
+              <a href="store.html" class="block px-3 py-2 hover:bg-white/5 text-white/80">Web Store</a>
+              <a href="checkout.html" class="block px-3 py-2 hover:bg-white/5 text-white/80">Checkout</a>
+              <div class="border-t border-white/5 my-1"></div>
+              <a href="/logout" @click.prevent="logout()" class="block px-3 py-2 hover:bg-red-500/20 text-rose-300">Log Out</a>
+            </div>
+          </div>
+        </template>
+
+        <!-- Notification / Mail icon (when logged in) -->
+        <template x-if="authenticated && user">
+          <button type="button" class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="Notifications">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </button>
+        </template>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== MAIN PROFILE AREA ==================== -->
+  <main class="max-w-[680px] mx-auto px-4 py-8 sm:py-12 w-full flex-1" x-data="myAccountPage()" x-init="init()">
+    
+    <!-- 0. WHEN NOT AUTHENTICATED: OFFICIAL "SIGN IN TO GET STARTED" -->
+    <template x-if="!loading && !authenticated">
+      <div class="p-6 sm:p-8 rounded-2xl bg-[#0e1017] border border-[#1b1f2a] shadow-2xl relative">
+        <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-[#838b99] font-medium mb-1.5">YOUR PROFILE</div>
+        <h1 class="font-display font-bold text-2xl sm:text-[28px] text-white tracking-tight mb-2">Sign in to get started</h1>
+        <p class="text-sm text-[#8c92a2] mb-6">Link your Discord and your Minecraft account to manage 2FA, store purchases, and in-game sync.</p>
+
+        <!-- Discord OAuth Error Banner -->
+        <template x-if="oauthError">
+          <div class="mb-5 p-4 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300 flex items-start gap-3">
+            <svg class="w-4 h-4 flex-shrink-0 text-rose-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div>
+              <div class="font-semibold text-rose-200">Discord Authentication Notice</div>
+              <div class="mt-0.5 opacity-90" x-text="oauthError"></div>
+            </div>
+          </div>
+        </template>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="/auth/discord" class="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl bg-[#ff2e1f] hover:bg-[#ff4232] text-white font-semibold text-sm transition shadow-lg shadow-red-500/20">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.317 4.37a19.91 19.91 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 0 0-5.487 0c-.164-.39-.404-.874-.617-1.249a.077.077 0 0 0-.08-.037A19.74 19.74 0 0 0 3.678 4.37a.07.07 0 0 0-.032.027C.534 9.046-.321 13.58.099 18.057a.082.082 0 0 0 .031.055 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.027c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.076.076 0 0 0-.04.107c.36.698.772 1.363 1.225 1.993a.077.077 0 0 0 .084.028 19.86 19.86 0 0 0 6-3.03.077.077 0 0 0 .031-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.335.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.156 2.42 0 1.334-.946 2.419-2.156 2.419zm7.974 0c-1.183 0-2.156-1.085-2.156-2.419 0-1.335.955-2.42 2.156-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.334-.946 2.419-2.157 2.419z"/></svg>
+            <span>Login with Discord</span>
+          </a>
+          <a href="/auth/quick-login" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white text-xs font-semibold transition" title="1-Click Login for testing">
+            <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+            <span>Dev 1-Click Login (@kartikplayzz1)</span>
+          </a>
+        </div>
+      </div>
+    </template>
+
+    <!-- 1. WHEN AUTHENTICATED: SHOW REAL DISCORD IDENTITY AND MINECRAFT LINK -->
+    <template x-if="!loading && authenticated && user">
+      <div>
+        
+        <!-- SIGNED-IN DISCORD IDENTITY CARD WITH PROMINENT LOGOUT BUTTON -->
+        <div class="flex items-center justify-between gap-4 mb-6 p-4 sm:p-5 rounded-2xl bg-[#0e1017] border border-[#1b1f2a] shadow-xl">
+          <div class="flex items-center gap-3.5 sm:gap-4 min-w-0">
+            <div class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/40 flex-shrink-0">
+              <img :src="user.avatarUrl" alt="Discord Avatar" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-[#838b99] font-medium">SIGNED IN AS</div>
+              <div class="font-display font-bold text-xl sm:text-2xl text-white tracking-tight truncate" x-text="'@' + user.username"></div>
+              <div class="text-xs text-[#8c94a2] truncate" x-text="user.global_name || user.username"></div>
+            </div>
+          </div>
+          <button type="button" @click="logout()" class="px-3.5 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            <span>Log Out</span>
+          </button>
+        </div>
+
+        <!-- 2. LINKED MINECRAFT STATUS (IF LINKED) -->
+        <template x-if="isLinked && linkedPlayer">
+          <div class="p-6 sm:p-8 rounded-2xl mb-8 border border-white/10 bg-[#0e1017] relative overflow-hidden shadow-2xl">
+            <div class="flex flex-col sm:flex-row items-center gap-6">
+              <!-- 3D Skin Body / Avatar -->
+              <div class="w-20 h-28 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center p-2 flex-shrink-0 overflow-hidden shadow-inner">
+                <img :src="linkedPlayer.skinUrl || 'https://mc-heads.net/body/' + linkedPlayer.minecraftUsername + '/right'" alt="Skin" class="h-full object-contain filter drop-shadow">
+              </div>
+              <div class="flex-1 text-center sm:text-left min-w-0">
+                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Linked to Minecraft
+                  </span>
+                  <!-- Account Type Badge: Premium, Cracked, or Bedrock PE -->
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold"
+                        :class="{
+                          'bg-sky-500/15 border border-sky-500/30 text-sky-400': linkedPlayer.accountType && linkedPlayer.accountType.includes('Premium'),
+                          'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300': linkedPlayer.accountType && linkedPlayer.accountType.includes('Bedrock'),
+                          'bg-amber-500/15 border border-amber-500/30 text-amber-300': !linkedPlayer.accountType || linkedPlayer.accountType.includes('Cracked')
+                        }"
+                        x-text="linkedPlayer.accountType || 'Java Account'">Java Premium</span>
+                </div>
+                
+                <h2 class="font-display font-bold text-2xl text-white truncate" x-text="linkedPlayer.minecraftUsername"></h2>
+                <div class="text-[11px] font-mono text-[#8c94a2] mt-0.5 truncate" x-text="'UUID: ' + (linkedPlayer.minecraftUuid || 'N/A')"></div>
+                <p class="text-xs text-white/60 mt-2">All store purchases, discord sync roles, and network permissions are connected to this in-game player ID.</p>
+              </div>
+              <div class="flex-shrink-0">
+                <button type="button" @click="unlinkAccount()" class="border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs py-2 px-3.5 rounded-lg transition font-medium">
+                  Unlink
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 3. MAIN LINKING CARD (MATCHING USER SCREENSHOT EXACTLY) -->
+        <template x-if="!isLinked">
+          <div class="p-6 sm:p-8 rounded-2xl bg-[#0e1017] border border-[#1b1f2a] shadow-2xl relative">
+            
+            <h2 class="font-display font-bold text-xl sm:text-[22px] text-white tracking-tight">Link your Minecraft account</h2>
+            <p class="text-xs sm:text-[13.5px] text-[#8c92a2] mt-1 mb-6">Run the command below in-game within the countdown to link.</p>
+
+            <!-- Inner Cyan Glowing Code Box -->
+            <div class="rounded-xl border border-cyan-500/40 bg-[#06080e] p-5 sm:p-6 shadow-[0_0_25px_-5px_rgba(6,182,212,0.18)] mb-6">
+              
+              <!-- Top Row: Label & Live Countdown -->
+              <div class="flex items-center justify-between text-xs mb-3 font-mono">
+                <span class="text-[#727888] tracking-[0.15em] uppercase text-[10.5px] font-semibold">YOUR LINK CODE</span>
+                <span class="text-[#8c92a2] font-sans text-xs" x-text="'Expires in ' + formattedCountdown"></span>
+              </div>
+
+              <!-- Big Red Link Code Display -->
+              <div class="text-left py-1 mb-5">
+                <div class="font-display font-extrabold text-4xl sm:text-5xl text-[#ff2e1f] tracking-[0.18em]"
+                     x-text="linkCode"></div>
+              </div>
+
+              <!-- Full Command Row -->
+              <div>
+                <div class="text-[10px] font-mono text-[#727888] uppercase tracking-[0.15em] font-semibold mb-2">FULL COMMAND</div>
+                <div class="flex items-center justify-between bg-[#040507] border border-[#1a1e28] rounded-lg p-1 pl-4">
+                  <span class="font-mono text-[13.5px] text-white/95 select-all" x-text="'/link ' + linkCode"></span>
+                  <button type="button" @click="copyCommand()"
+                          class="px-5 py-2 rounded-md bg-[#ff2e1f] hover:bg-[#ff4232] text-white font-semibold text-xs transition shadow-md flex items-center gap-1.5 flex-shrink-0">
+                    <svg x-show="copied" x-cloak class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span x-text="copied ? 'Copied!' : 'Copy'">Copy</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bottom Actions Row -->
+            <div class="flex items-center justify-between gap-4">
+              <button type="button" @click="generateNewCode()" :disabled="codeLoading"
+                      class="bg-[#12151e] hover:bg-[#181d29] border border-[#232838] text-xs text-white/90 py-2.5 px-4 rounded-lg font-medium transition flex items-center gap-2 cursor-pointer active:scale-95">
+                <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': codeLoading }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span x-text="codeLoading ? 'Generating...' : 'Generate new code'">Generate new code</span>
+              </button>
+            </div>
+
+          </div>
+        </template>
+      </div>
+    </template>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="py-12 text-center text-xs text-[#656c7d] space-y-2.5">
+    <div>&copy; 2026 Battlepie</div>
+    <div class="flex items-center justify-center gap-2">
+      <a href="terms.html" class="hover:text-white transition">Terms</a>
+      <span>&middot;</span>
+      <a href="privacy.html" class="hover:text-white transition">Privacy Policy</a>
+    </div>
+    <div class="flex items-center justify-center gap-2 pt-1">
+      <a href="https://discord.gg/battlepie" target="_blank" rel="noopener" class="w-7 h-7 rounded-lg bg-[#11141c] border border-white/10 flex items-center justify-center text-[#8c94a2] hover:text-white transition" title="Discord">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20.317 4.37a19.91 19.91 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 0 0-5.487 0c-.164-.39-.404-.874-.617-1.249a.077.077 0 0 0-.08-.037A19.74 19.74 0 0 0 3.678 4.37a.07.07 0 0 0-.032.027C.534 9.046-.321 13.58.099 18.057a.082.082 0 0 0 .031.055 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.027c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.076.076 0 0 0-.04.107c.36.698.772 1.363 1.225 1.993a.077.077 0 0 0 .084.028 19.86 19.86 0 0 0 6-3.03.077.077 0 0 0 .031-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.335.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.156 2.42 0 1.334-.946 2.419-2.156 2.419zm7.974 0c-1.183 0-2.156-1.085-2.156-2.419 0-1.335.955-2.42 2.156-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.334-.946 2.419-2.157 2.419z"/></svg>
+      </a>
+      <a href="https://www.instagram.com/battlepie.in" target="_blank" rel="noopener" class="w-7 h-7 rounded-lg bg-[#11141c] border border-white/10 flex items-center justify-center text-[#8c94a2] hover:text-white transition" title="Instagram">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37a4 4 0 1 1-7.914 1.173A4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      </a>
+    </div>
+  </footer>
+
+  <!-- Toast Element -->
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <svg class="w-4 h-4" style="color:#34d399" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-msg">Command copied</span>
+  </div>
+
+  <!-- Cart Drawer -->
+  <div id="zl-cart-root" x-data="zlCart()" x-init="init()" class="contents">
+    <div x-cloak x-show="open" class="fixed inset-0 z-[60]" @keydown.escape.window="open = false">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" x-transition.opacity @click="open = false"></div>
+      <aside x-show="open" class="zl-cart-drawer">
+        <header class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+          <div>
+            <h2 class="font-display font-bold text-lg text-white">Your Cart</h2>
+            <p class="text-xs text-white/50" x-text="count + ' item(s)'"></p>
+          </div>
+          <button @click="open = false" class="text-white/50 hover:text-white text-xl leading-none">&times;</button>
+        </header>
+        <div class="p-5 flex-1 overflow-y-auto">
+          <template x-if="!cart || !cart.lines.length">
+            <div class="py-12 text-center text-white/40 text-sm">Your cart is empty.</div>
+          </template>
+        </div>
+        <footer class="border-t border-white/10 p-5 space-y-3" x-show="cart && cart.lines.length">
+          <a href="checkout.html" class="btn btn-accent w-full text-center">Checkout &rarr;</a>
+        </footer>
+      </aside>
+    </div>
+  </div>
+
+  <script src="js/store-data.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    function myAccountNav() {
+      return {
+        authenticated: false,
+        user: null,
+        async init() {
+          try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+              const data = await res.json();
+              if (data.authenticated && data.user) {
+                this.authenticated = true;
+                this.user = data.user;
+                return;
+              }
+            }
+          } catch (e) {}
+          this.authenticated = false;
+          this.user = null;
+        },
+        async logout() {
+          try {
+            document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'zl-user=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            await fetch('/auth/logout', { method: 'POST', headers: { Accept: 'application/json' } });
+          } catch (e) {}
+          window.location.href = '/me?logged_out=' + Date.now();
+        }
+      };
+    }
+
+    function myAccountPage() {
+      return {
+        authenticated: false,
+        loading: true,
+        codeLoading: false,
+        user: null,
+        isLinked: false,
+        linkedPlayer: null,
+        linkCode: '',
+        secondsLeft: 120,
+        timer: null,
+        copied: false,
+        sseSource: null,
+        oauthError: new URLSearchParams(window.location.search).get('error') || null,
+
+        async logout() {
+          try {
+            document.cookie = 'zl-user=; Max-Age=0; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'zl-user=; Max-Age=0; path=/auth; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'zl-user=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            await fetch('/auth/logout', { method: 'POST', headers: { Accept: 'application/json' } });
+          } catch (e) {}
+          window.location.href = '/me?logged_out=' + Date.now();
+        },
+
+        get formattedCountdown() {
+          if (this.secondsLeft <= 0) {
+            return 'Active (Click to refresh)';
+          }
+          const mins = Math.floor(this.secondsLeft / 60);
+          const secs = this.secondsLeft % 60;
+          return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+        },
+
+        async init() {
+          await this.loadStatus();
+          if (this.authenticated && !this.isLinked) {
+            this.startCountdown();
+            this.initSse();
+          }
+        },
+
+        async loadStatus() {
+          this.loading = true;
+          try {
+            const res = await fetch('/api/auth/link/status');
+            if (res.ok) {
+              const data = await res.json();
+              this.authenticated = Boolean(data.authenticated);
+              if (this.authenticated && data.user) {
+                this.user = data.user;
+                this.isLinked = Boolean(data.isLinked);
+                this.linkedPlayer = data.linkedPlayer;
+                if (data.activeCode) {
+                  this.linkCode = data.activeCode.code;
+                  this.secondsLeft = data.activeCode.expiresInSeconds !== undefined ? data.activeCode.expiresInSeconds : Math.max(0, Math.floor((data.activeCode.uiExpiresAt - Date.now()) / 1000));
+                }
+              } else {
+                this.user = null;
+                this.isLinked = false;
+                this.linkedPlayer = null;
+                this.linkCode = '';
+              }
+            }
+          } catch (e) {
+            this.authenticated = false;
+            this.user = null;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        startCountdown() {
+          clearInterval(this.timer);
+          this.timer = setInterval(() => {
+            if (this.secondsLeft > 0) {
+              this.secondsLeft--;
+            } else {
+              clearInterval(this.timer);
+            }
+          }, 1000);
+        },
+
+        async generateNewCode() {
+          if (!this.authenticated || this.codeLoading) return;
+          this.codeLoading = true;
+          try {
+            const res = await fetch('/api/auth/link/generate-code', { method: 'POST' });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.code) {
+                this.linkCode = data.code;
+                this.secondsLeft = data.expiresInSeconds || 120;
+                this.startCountdown();
+                if (window.zlToast) window.zlToast('New link code: ' + data.code);
+              }
+            } else {
+              const err = await res.json();
+              if (window.zlToast) window.zlToast(err.error || 'Failed to generate code');
+            }
+          } catch (e) {
+            console.error('Error generating code:', e);
+          } finally {
+            this.codeLoading = false;
+          }
+        },
+
+        initSse() {
+          if (!this.authenticated) return;
+          try {
+            if (this.sseSource) this.sseSource.close();
+            this.sseSource = new EventSource('/api/auth/link/events');
+            this.sseSource.onmessage = (e) => {
+              try {
+                const data = JSON.parse(e.data);
+                if (data.event === 'linked' && data.player) {
+                  this.isLinked = true;
+                  this.linkedPlayer = data.player;
+                  clearInterval(this.timer);
+                  if (window.zlToast) window.zlToast(`Linked to ${data.player.minecraftUsername} (${data.player.accountType})!`);
+                } else if (data.event === 'unlinked') {
+                  this.isLinked = false;
+                  this.linkedPlayer = null;
+                  this.generateNewCode();
+                }
+              } catch (err) {}
+            };
+          } catch (e) {}
+        },
+
+        copyCommand() {
+          const cmd = `/link ${this.linkCode}`;
+          navigator.clipboard.writeText(cmd).then(() => {
+            this.copied = true;
+            if (window.zlToast) window.zlToast('Command copied to clipboard');
+            setTimeout(() => { this.copied = false; }, 2000);
+          }).catch(() => {
+            if (window.zlToast) window.zlToast('Command copied');
+          });
+        },
+
+        async unlinkAccount() {
+          if (!confirm('Are you sure you want to unlink your Minecraft account?')) return;
+          try {
+            const res = await fetch('/api/auth/link/unlink', { method: 'POST' });
+            if (res.ok) {
+              this.isLinked = false;
+              this.linkedPlayer = null;
+              await this.generateNewCode();
+              if (window.zlToast) window.zlToast('Minecraft account unlinked');
+            }
+          } catch (e) {}
+        }
+      };
+    }
+  </script>
+</body>
+</html>
