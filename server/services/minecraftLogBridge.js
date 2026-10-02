@@ -253,6 +253,7 @@ class MinecraftLogBridge {
       if (!link) return;
 
       const uuid = playerUuid || link.minecraftUuid;
+      SkinsRestorerService.invalidateCache(uuid);
       const skinData = await SkinsRestorerService.resolveSkinWithSftp(this.sftp, uuid, playerUsername);
 
       if (skinData && skinData.skinUrl) {
