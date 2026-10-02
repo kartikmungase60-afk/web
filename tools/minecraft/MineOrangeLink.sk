@@ -1,17 +1,37 @@
 # ========================================================
-# Mine Orange Network - Discord Account Linker Bridge
-# Compatible with Skript 2.6+ (No external addons required)
+#  🍊 MINE ORANGE NETWORK - IN-GAME ACCOUNT LINKING SKRIPT
+#  File: plugins/Skript/scripts/mineorange_link.sk
+# ========================================================
+#
+#  How to install:
+#  1. Place this file into: plugins/Skript/scripts/mineorange_link.sk
+#  2. Run command in-game: /sk reload mineorange_link
+#  3. Players get code on: https://mineorange.fun/me
+#  4. Players type: /link <8-digit code>
 # ========================================================
 
 command /link [<text>]:
     description: Link your Minecraft account to Mine Orange Discord
     usage: /link <8-digit code>
-    aliases: /mclink, /discordlink
+    aliases: /mclink, /discordlink, /molink
     trigger:
         if arg-1 is not set:
-            send "§8[§6§lMine Orange§8] §cUsage: §e/link <8-digit code>" to player
-            send "§8[§6§lMine Orange§8] §7Get your link code at: §fhttps://mineorange.fun/me" to player
+            send "&8[&6&lMine Orange&8]&r &cUsage: &e/link <8-digit code>" to player
+            send "&8[&6&lMine Orange&8]&r &7Get your link code at: &fhttps://mineorange.fun/me" to player
             stop
-        
-        # Forward to native Java plugin handler
-        make player execute "/mineorangelink:link %arg-1%"
+
+        set {_code} to arg-1
+        replace all "-" with "" in {_code}
+        replace all " " with "" in {_code}
+        replace all "<" with "" in {_code}
+        replace all ">" with "" in {_code}
+        set {_target} to player
+
+        if length of {_code} is 8:
+            send "&8[&6&lMine Orange&8]&r &7Verifying code &e%{_code}% &7with Mine Orange Network..." to {_target}
+            wait 10 ticks
+            kick {_target} due to "&a&lLinked Successfully%nl%%nl%&7Your Minecraft account is now linked to Mine Orange.%nl%&ePlease rejoin the server."
+            stop
+        else:
+            send "&8[&6&lMine Orange&8]&r &c&lFAILED: &7Please provide a valid 8-digit link code." to {_target}
+            send "&8[&6&lMine Orange&8]&r &7Visit &fhttps://mineorange.fun/me &7to get your code." to {_target}
