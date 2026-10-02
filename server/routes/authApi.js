@@ -352,17 +352,14 @@ router.all('/link/status', async (req, res) => {
 
   // If player is linked, verify if their skin in SkinsRestorer needs to be synced
   if (linkRecord && linkRecord.minecraftUuid) {
-    const shouldRefresh = req.query.refresh === 'true' || req.query.refreshSkin === 'true' || req.headers['x-refresh-skin'] === 'true';
-    if (shouldRefresh || (linkRecord.skinSource === 'Default / Mojang' && linkRecord.isCracked)) {
-      try {
-        const skinsRestorerService = require('../services/skinsRestorerService');
-        const skinData = await skinsRestorerService.fetchPlayerSkin(linkRecord.minecraftUuid, linkRecord.minecraftUsername);
-        if (skinData && skinData.skinUrl && skinData.skinUrl !== linkRecord.skinUrl) {
-          PlayerLinkService.updatePlayerSkin(user.id, skinData);
-          linkRecord = PlayerLinkService.getLinkStatus(user.id);
-        }
-      } catch (err) {}
-    }
+    try {
+      const skinsRestorerService = require('../services/skinsRestorerService');
+      const skinData = await skinsRestorerService.fetchPlayerSkin(linkRecord.minecraftUuid, linkRecord.minecraftUsername);
+      if (skinData && skinData.skinUrl && (skinData.skinUrl !== linkRecord.skinUrl || (skinData.textureHash && skinData.textureHash !== linkRecord.textureHash))) {
+        PlayerLinkService.updatePlayerSkin(user.id, skinData);
+        linkRecord = PlayerLinkService.getLinkStatus(user.id);
+      }
+    } catch (err) {}
   }
 
   let activeCode = null;
@@ -449,6 +446,7 @@ router.all('/link/refresh-skin', async (req, res) => {
 
   try {
     const SkinsRestorerService = require('../services/skinsRestorerService');
+    SkinsRestorerService.invalidateCache(link.minecraftUuid);
     const skinData = await SkinsRestorerService.fetchPlayerSkin(link.minecraftUuid, link.minecraftUsername);
     if (skinData && skinData.skinUrl) {
       PlayerLinkService.updatePlayerSkin(user.id, skinData);

@@ -1,5 +1,23 @@
 const { Client } = require('ssh2');
 
+const SKIN_PRESETS = {
+  'sr-recommendation-investigator': { id: 'sr-recommendation-investigator', type: 'CUSTOM', hash: 'd860b42fa018921ee17ef4c413970ea42d76258046ebe31592c5cab85600e196', name: 'Gentleman 🎩' },
+  'investigator': { id: 'sr-recommendation-investigator', type: 'CUSTOM', hash: 'd860b42fa018921ee17ef4c413970ea42d76258046ebe31592c5cab85600e196', name: 'Gentleman 🎩' },
+  'gentleman': { id: 'sr-recommendation-investigator', type: 'CUSTOM', hash: 'd860b42fa018921ee17ef4c413970ea42d76258046ebe31592c5cab85600e196', name: 'Gentleman 🎩' },
+  'sr-recommendation-fox': { id: 'sr-recommendation-fox', type: 'CUSTOM', hash: 'c823bceddc2ad07ccbe585ac68a06d8834086869f261d3becb08884633a51f53', name: 'Fox 🦊' },
+  'fox': { id: 'sr-recommendation-fox', type: 'CUSTOM', hash: 'c823bceddc2ad07ccbe585ac68a06d8834086869f261d3becb08884633a51f53', name: 'Fox 🦊' },
+  'sr-recommendation-kermit': { id: 'sr-recommendation-kermit', type: 'CUSTOM', hash: '1fa056ab42c519750cf7da45d9ea498476a9431f0db252c15e9f8ba130a520f7', name: 'Kermit 🐸' },
+  'kermit': { id: 'sr-recommendation-kermit', type: 'CUSTOM', hash: '1fa056ab42c519750cf7da45d9ea498476a9431f0db252c15e9f8ba130a520f7', name: 'Kermit 🐸' },
+  'sr-recommendation-boy-black-sweater': { id: 'sr-recommendation-boy-black-sweater', type: 'CUSTOM', hash: '71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12', name: 'Boy Hoodie 👦' },
+  'boy-black-sweater': { id: 'sr-recommendation-boy-black-sweater', type: 'CUSTOM', hash: '71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12', name: 'Boy Hoodie 👦' },
+  'sr-recommendation-incognito': { id: 'sr-recommendation-incognito', type: 'CUSTOM', hash: 'f05015f45144868f26ac713bab29611ba8f092899ee2a439141f7c8490bdd565', name: 'Incognito 🕶️' },
+  'incognito': { id: 'sr-recommendation-incognito', type: 'CUSTOM', hash: 'f05015f45144868f26ac713bab29611ba8f092899ee2a439141f7c8490bdd565', name: 'Incognito 🕶️' },
+  'sr-recommendation-green-bird': { id: 'sr-recommendation-green-bird', type: 'CUSTOM', hash: 'cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f', name: 'Green Bird 🐦' },
+  'green-bird': { id: 'sr-recommendation-green-bird', type: 'CUSTOM', hash: 'cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f', name: 'Green Bird 🐦' },
+  'sr-recommendation-person-black-shirt': { id: 'sr-recommendation-person-black-shirt', type: 'CUSTOM', hash: '1f5eaa74dd1df1912a1e1ab70f32ba008032ae0daa6bfe2b9ff137f9d8671930', name: 'Black Shirt 👕' },
+  'person-black-shirt': { id: 'sr-recommendation-person-black-shirt', type: 'CUSTOM', hash: '1f5eaa74dd1df1912a1e1ab70f32ba008032ae0daa6bfe2b9ff137f9d8671930', name: 'Black Shirt 👕' }
+};
+
 class SkinsRestorerService {
   constructor() {
     this.config = {
@@ -8,6 +26,7 @@ class SkinsRestorerService {
       username: process.env.SFTP_USERNAME || 'master.3297b18b',
       password: process.env.SFTP_PASSWORD || 'Kartik@1234'
     };
+    this.skinCache = new Map(); // uuid -> { data, timestamp }
   }
 
   extractTextureHash(value) {
@@ -21,6 +40,18 @@ class SkinsRestorerService {
     const match2 = value.match(/textures\.minecraft\.net\/texture\/([a-zA-Z0-9]+)/);
     if (match2) return match2[1];
     return null;
+  }
+
+  getPreset(key) {
+    if (!key) return null;
+    const lower = key.trim().toLowerCase();
+    return SKIN_PRESETS[lower] || null;
+  }
+
+  invalidateCache(playerUuid) {
+    if (playerUuid) {
+      this.skinCache.delete(playerUuid);
+    }
   }
 
   // Resolve skin directly using an existing SFTP session
@@ -53,7 +84,20 @@ class SkinsRestorerService {
 
         const { identifier, type } = json.skinIdentifier;
 
+        // Check if identifier matches a known preset
+        const preset = this.getPreset(identifier);
+
         if (type === 'CUSTOM') {
+          if (preset && preset.hash) {
+            return resolve({
+              skinName: identifier,
+              skinSource: `SkinsRestorer Texture (${identifier})`,
+              textureHash: preset.hash,
+              skinUrl: `https://mc-heads.net/body/${preset.hash}/right`,
+              avatarUrl: `https://mc-heads.net/avatar/${preset.hash}/128`
+            });
+          }
+
           const skinFilePath = `plugins/SkinsRestorer/skins/${identifier}.customskin`;
           sftp.readFile(skinFilePath, (err, skinData) => {
             if (err || !skinData) {
@@ -87,11 +131,33 @@ class SkinsRestorerService {
             });
           });
         } else if (type === 'PLAYER') {
-          resolve({
-            skinName: identifier,
-            skinSource: `SkinsRestorer Player (${identifier})`,
-            skinUrl: `https://mc-heads.net/body/${encodeURIComponent(identifier)}/right`,
-            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(identifier)}/128`
+          // SkinsRestorer v15 stores player skins under plugins/SkinsRestorer/skins/${identifier}.playerskin
+          const playerSkinPath = `plugins/SkinsRestorer/skins/${identifier}.playerskin`;
+          sftp.readFile(playerSkinPath, (err, pData) => {
+            if (!err && pData) {
+              try {
+                const pJson = JSON.parse(pData.toString('utf8'));
+                const hash = this.extractTextureHash(pJson.value);
+                const playerName = pJson.lastKnownName || identifier;
+                if (hash) {
+                  return resolve({
+                    skinName: playerName,
+                    skinSource: `SkinsRestorer Player (${playerName})`,
+                    textureHash: hash,
+                    skinUrl: `https://mc-heads.net/body/${hash}/right`,
+                    avatarUrl: `https://mc-heads.net/avatar/${hash}/128`
+                  });
+                }
+              } catch (e) {}
+            }
+
+            // Fallback for player skin
+            resolve({
+              skinName: identifier,
+              skinSource: `SkinsRestorer Player (${identifier})`,
+              skinUrl: `https://mc-heads.net/body/${encodeURIComponent(identifier)}/right`,
+              avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(identifier)}/128`
+            });
           });
         } else if (type === 'URL') {
           const hash = this.extractTextureHash(identifier);
@@ -120,46 +186,138 @@ class SkinsRestorerService {
     });
   }
 
-  // Standalone fetch creating temporary connection if needed
+  // Standalone fetch creating temporary connection if needed (with 3.5s cache)
   async fetchPlayerSkin(playerUuid, minecraftUsername) {
+    if (!playerUuid) return null;
+
+    const cached = this.skinCache.get(playerUuid);
+    if (cached && Date.now() - cached.timestamp < 3500) {
+      return cached.data;
+    }
+
     return new Promise((resolve) => {
       const conn = new Client();
       const timer = setTimeout(() => {
         try { conn.end(); } catch (e) {}
-        resolve(null);
-      }, 6000);
+        resolve(cached ? cached.data : null);
+      }, 5000);
 
       conn.on('ready', () => {
         conn.sftp(async (err, sftp) => {
           if (err) {
             clearTimeout(timer);
             try { conn.end(); } catch (e) {}
-            return resolve(null);
+            return resolve(cached ? cached.data : null);
           }
           const res = await this.resolveSkinWithSftp(sftp, playerUuid, minecraftUsername);
           clearTimeout(timer);
           try { conn.end(); } catch (e) {}
+          if (res) {
+            this.skinCache.set(playerUuid, { data: res, timestamp: Date.now() });
+          }
           resolve(res);
         });
       });
 
       conn.on('error', () => {
         clearTimeout(timer);
-        resolve(null);
+        resolve(cached ? cached.data : null);
       });
 
       try {
         conn.connect(this.config);
       } catch (e) {
         clearTimeout(timer);
-        resolve(null);
+        resolve(cached ? cached.data : null);
       }
     });
+  }
+
+  // Resolve skin preset or Minecraft username to proper identifiers and textures
+  async resolveSkinPresetOrUser(skinInput) {
+    if (!skinInput) return null;
+    const clean = skinInput.trim();
+
+    // 1. Is it a preset?
+    const preset = this.getPreset(clean);
+    if (preset) {
+      return {
+        identifier: preset.id,
+        type: 'CUSTOM',
+        skinName: preset.name,
+        textureHash: preset.hash,
+        skinUrl: `https://mc-heads.net/body/${preset.hash}/right`,
+        avatarUrl: `https://mc-heads.net/avatar/${preset.hash}/128`
+      };
+    }
+
+    // 2. Is it already a dashed Mojang UUID?
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+    if (isUuid) {
+      return {
+        identifier: clean,
+        type: 'PLAYER',
+        skinName: clean,
+        skinUrl: `https://mc-heads.net/body/${clean}/right`,
+        avatarUrl: `https://mc-heads.net/avatar/${clean}/128`
+      };
+    }
+
+    // 3. It's a player username: resolve official Mojang UUID and textures
+    try {
+      const profileRes = await fetch(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(clean)}`);
+      if (profileRes.ok) {
+        const pData = await profileRes.json();
+        if (pData && pData.id) {
+          const rawId = pData.id;
+          const dashedUuid = rawId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+          const officialName = pData.name || clean;
+
+          // Attempt to fetch textures
+          let textureHash = null;
+          try {
+            const sessRes = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${rawId}`);
+            if (sessRes.ok) {
+              const sessData = await sessRes.json();
+              if (sessData.properties && sessData.properties[0]) {
+                textureHash = this.extractTextureHash(sessData.properties[0].value);
+              }
+            }
+          } catch (e) {}
+
+          const skinUrl = textureHash
+            ? `https://mc-heads.net/body/${textureHash}/right`
+            : `https://mc-heads.net/body/${dashedUuid}/right`;
+          const avatarUrl = textureHash
+            ? `https://mc-heads.net/avatar/${textureHash}/128`
+            : `https://mc-heads.net/avatar/${dashedUuid}/128`;
+
+          return {
+            identifier: dashedUuid,
+            type: 'PLAYER',
+            skinName: officialName,
+            textureHash,
+            skinUrl,
+            avatarUrl
+          };
+        }
+      }
+    } catch (e) {}
+
+    // Fallback: use clean name
+    return {
+      identifier: clean,
+      type: 'PLAYER',
+      skinName: clean,
+      skinUrl: `https://mc-heads.net/body/${encodeURIComponent(clean)}/right`,
+      avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(clean)}/128`
+    };
   }
 
   // Set skin directly into SkinsRestorer player file via SFTP
   async setPlayerSkinFile(playerUuid, skinIdentifier, type = 'PLAYER') {
     return new Promise((resolve) => {
+      this.invalidateCache(playerUuid);
       const conn = new Client();
       const timer = setTimeout(() => {
         try { conn.end(); } catch (e) {}
@@ -200,7 +358,7 @@ class SkinsRestorerService {
               console.warn('[SkinsRestorer] Failed to write player file:', wErr.message);
               return resolve(false);
             }
-            console.log(`[SkinsRestorer] Successfully wrote skin '${skinIdentifier}' for UUID ${playerUuid}`);
+            console.log(`[SkinsRestorer] Successfully wrote skin '${skinIdentifier}' (${type}) for UUID ${playerUuid}`);
             resolve(true);
           });
         });
@@ -223,6 +381,7 @@ class SkinsRestorerService {
 
   // Delete skin from SkinsRestorer player file (reset to default)
   async deletePlayerSkinFile(playerUuid) {
+    this.invalidateCache(playerUuid);
     return new Promise((resolve) => {
       const conn = new Client();
       const timer = setTimeout(() => {
@@ -262,4 +421,3 @@ class SkinsRestorerService {
 }
 
 module.exports = new SkinsRestorerService();
-

@@ -543,14 +543,12 @@ class PlayerLinkService {
 
   // Async getLinkStatus ensuring Firebase sync
   static async getLinkStatusAsync(discordId, discordUsername, linkToken, cachedPlayer) {
-    await PlayerLinkService.ensureLoaded();
-    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, linkToken, cachedPlayer);
-    if (!link && discordId) {
-      const fromFb = await fetchPlayerFromFirebase(discordId);
-      if (fromFb) {
-        link = PlayerLinkService.getLinkStatus(discordId, discordUsername, linkToken, cachedPlayer);
-      }
+    if (discordId) {
+      await fetchPlayerFromFirebase(discordId);
+    } else {
+      await PlayerLinkService.ensureLoaded();
     }
+    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, linkToken, cachedPlayer);
     return link;
   }
 

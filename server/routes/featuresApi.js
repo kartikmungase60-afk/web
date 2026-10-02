@@ -215,29 +215,34 @@ router.post('/skin/set', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Linked Minecraft account not found' });
     }
 
-    // mc-heads renders by skin name/hash
-    const skinUrl = `https://mc-heads.net/body/${encodeURIComponent(cleanSkin)}/right`;
-    const avatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(cleanSkin)}/128`;
+    const skinsRestorerService = require('../services/skinsRestorerService');
+    const resolved = await skinsRestorerService.resolveSkinPresetOrUser(cleanSkin);
 
-    PlayerLinkService.updatePlayerSkin(link.discordId, {
-      skinName: cleanSkin,
-      skinUrl,
-      avatarUrl,
-      skinSource: `Website (${cleanSkin})`
-    });
+    const skinUrl = (resolved && resolved.skinUrl) || `https://mc-heads.net/body/${encodeURIComponent(cleanSkin)}/right`;
+    const avatarUrl = (resolved && resolved.avatarUrl) || `https://mc-heads.net/avatar/${encodeURIComponent(cleanSkin)}/128`;
+    const finalSkinName = (resolved && resolved.skinName) || cleanSkin;
+    const finalIdentifier = (resolved && resolved.identifier) || cleanSkin;
+    const finalType = (resolved && resolved.type) || (cleanSkin.startsWith('sr-recommendation-') ? 'CUSTOM' : (skinType || 'PLAYER'));
+    const textureHash = (resolved && resolved.textureHash) || null;
 
     // Write to SkinsRestorer on server via SFTP
     try {
-      const skinsRestorerService = require('../services/skinsRestorerService');
-      const isCustom = cleanSkin.startsWith('sr-recommendation-');
       await skinsRestorerService.setPlayerSkinFile(
         link.minecraftUuid,
-        cleanSkin,
-        isCustom ? 'CUSTOM' : (skinType || 'PLAYER')
+        finalIdentifier,
+        finalType
       );
     } catch (e) {
       console.warn('[featuresApi] Could not write skin to SFTP:', e.message);
     }
+
+    PlayerLinkService.updatePlayerSkin(link.discordId, {
+      skinName: finalSkinName,
+      skinUrl,
+      avatarUrl,
+      textureHash,
+      skinSource: `Website (${finalSkinName})`
+    });
 
     const updated = PlayerLinkService.getLinkStatus(link.discordId);
 
@@ -245,14 +250,15 @@ router.post('/skin/set', async (req, res) => {
       ip: getClientIp(req),
       category: 'Players',
       action: 'UPDATE_SKIN',
-      details: `Player '${username}' updated skin to '${cleanSkin}'`
+      details: `Player '${username}' updated skin to '${finalSkinName}'`
     });
 
     res.json({
       success: true,
-      message: `Skin '${cleanSkin}' applied successfully! Rejoin or use /skin update in-game if online.`,
+      message: `Skin '${finalSkinName}' applied successfully! Rejoin or use /skin update in-game if online.`,
       skinUrl,
       avatarUrl,
+      textureHash,
       player: updated
     });
   } catch (err) {

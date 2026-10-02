@@ -139,7 +139,7 @@
         <div class="md:col-span-4 flex flex-col items-center justify-center p-4 rounded-xl bg-black/40 border border-white/5">
           <div class="relative w-36 h-56 flex items-center justify-center overflow-hidden">
             <template x-if="previewUrl">
-              <img :src="previewUrl" alt="Skin Preview" class="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+              <img :src="getPreviewUrl()" alt="Skin Preview" class="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
             </template>
             <template x-if="!previewUrl">
               <img :src="'https://mc-heads.net/body/' + encodeURIComponent(username) + '/right'"
@@ -294,11 +294,14 @@
         dragOver: false,
         uploading: false,
         resetting: false,
+        pollTimer: null,
+        evtSource: null,
 
         presets: [
+          { id: 'investigator', name: 'Gentleman 🎩', preview: 'https://mc-heads.net/avatar/d860b42fa018921ee17ef4c413970ea42d76258046ebe31592c5cab85600e196/64' },
           { id: 'fox', name: 'Fox 🦊', preview: 'https://mc-heads.net/avatar/c823bceddc2ad07ccbe585ac68a06d8834086869f261d3becb08884633a51f53/64' },
-          { id: 'boy-black-sweater', name: 'Boy Hoodie 👦', preview: 'https://mc-heads.net/avatar/boy-black-sweater/64' },
-          { id: 'kermit', name: 'Kermit 🐸', preview: 'https://mc-heads.net/avatar/kermit/64' },
+          { id: 'boy-black-sweater', name: 'Boy Hoodie 👦', preview: 'https://mc-heads.net/avatar/71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12/64' },
+          { id: 'kermit', name: 'Kermit 🐸', preview: 'https://mc-heads.net/avatar/1fa056ab42c519750cf7da45d9ea498476a9431f0db252c15e9f8ba130a520f7/64' },
           { id: 'Notch', name: 'Notch 👑', preview: 'https://mc-heads.net/avatar/Notch/64' },
           { id: 'dream', name: 'Dream 🟢', preview: 'https://mc-heads.net/avatar/dream/64' },
           { id: 'technoblade', name: 'Techno 🐷', preview: 'https://mc-heads.net/avatar/technoblade/64' }
@@ -307,8 +310,36 @@
         init() {
           this.loadFromStorage();
           this.syncWithServer();
+          this.initSse();
+          this.pollTimer = setInterval(() => this.syncWithServer(), 3500);
           window.addEventListener('storage', () => this.loadFromStorage());
           document.addEventListener('battlepie:auth:changed', () => this.loadFromStorage());
+        },
+
+        initSse() {
+          try {
+            const rawUser = localStorage.getItem('battlepie_client_user');
+            const user = rawUser ? JSON.parse(rawUser) : null;
+            if (!user || !user.id || this.evtSource) return;
+            this.evtSource = new EventSource('/api/auth/link/events');
+            this.evtSource.onmessage = (e) => {
+              try {
+                const data = JSON.parse(e.data);
+                if (data.event === 'skin_updated' && data.player) {
+                  this.previewUrl = data.player.skinUrl;
+                  this.currentSkinName = data.player.skinName;
+                  this.updateLocalCache(data.player);
+                }
+              } catch (err) {}
+            };
+          } catch (e) {}
+        },
+
+        getPreviewUrl() {
+          if (!this.previewUrl) return '';
+          if (this.previewUrl.startsWith('data:')) return this.previewUrl;
+          const t = this.previewUrl.includes('?') ? '&' : '?';
+          return this.previewUrl + t + 'v=' + encodeURIComponent(this.currentSkinName || Date.now());
         },
 
         loadFromStorage() {
@@ -346,6 +377,7 @@
                 if (d.linkedPlayer.skinName) this.currentSkinName = d.linkedPlayer.skinName;
                 localStorage.setItem('battlepie_linked_player', JSON.stringify(d.linkedPlayer));
                 localStorage.setItem('mo_player', JSON.stringify(d.linkedPlayer));
+                if (!this.evtSource) this.initSse();
               }
             }
           } catch (e) {}

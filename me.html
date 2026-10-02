@@ -189,7 +189,7 @@
               <div class="flex items-center gap-6">
                 <!-- Steve 3D Render -->
                 <div class="w-20 sm:w-24 h-32 sm:h-36 flex-shrink-0 flex items-center justify-center">
-                  <img :src="linkedPlayer.skinUrl || 'https://mc-heads.net/body/' + linkedPlayer.minecraftUsername + '/right'"
+                  <img :src="getSkinUrl(linkedPlayer)"
                        alt="Minecraft Skin"
                        class="h-full object-contain filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                 </div>
@@ -976,6 +976,13 @@
               }
             } catch (e) {}
           }, 4000);
+        },
+
+        getSkinUrl(p) {
+          if (!p) return '';
+          const base = p.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(p.minecraftUsername) + '/right');
+          const v = p.textureHash || (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
+          return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
         },
 
         async refreshSkin() {

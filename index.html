@@ -66,10 +66,49 @@
         isLinked: initialLinked,
         linkedPlayer: initialPlayer,
 
+        pollTimer: null,
+        evtSource: null,
+
         init() {
           this.checkStatus();
+          this.initSse();
+          this.pollTimer = setInterval(() => this.checkStatus(), 3500);
           window.addEventListener('storage', () => this.checkLocal());
-          document.addEventListener('battlepie:auth:changed', () => this.checkLocal());
+          document.addEventListener('battlepie:auth:changed', () => {
+            this.checkLocal();
+            this.checkStatus();
+          });
+        },
+
+        initSse() {
+          if (!this.user || !this.user.id || this.evtSource) return;
+          try {
+            this.evtSource = new EventSource('/api/auth/link/events');
+            this.evtSource.onmessage = (e) => {
+              try {
+                const data = JSON.parse(e.data);
+                if ((data.event === 'skin_updated' || data.event === 'linked') && data.player) {
+                  this.linkedPlayer = data.player;
+                  this.isLinked = true;
+                  localStorage.setItem('battlepie_linked_player', JSON.stringify(data.player));
+                  if (data.player.linkToken) {
+                    localStorage.setItem('battlepie_link_token', data.player.linkToken);
+                  }
+                } else if (data.event === 'unlinked') {
+                  this.linkedPlayer = null;
+                  this.isLinked = false;
+                  localStorage.removeItem('battlepie_linked_player');
+                }
+              } catch (err) {}
+            };
+          } catch (e) {}
+        },
+
+        getSkinUrl(p) {
+          if (!p) return '';
+          const base = p.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(p.minecraftUsername) + '/right');
+          const v = p.textureHash || (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
+          return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
         },
 
         checkLocal() {
@@ -81,6 +120,7 @@
             const rawPlayer = localStorage.getItem('battlepie_linked_player');
             this.linkedPlayer = rawPlayer ? JSON.parse(rawPlayer) : null;
             this.isLinked = !!(this.linkedPlayer && this.linkedPlayer.minecraftUsername);
+            if (this.authenticated && !this.evtSource) this.initSse();
           } catch (e) {}
         },
 
@@ -112,6 +152,7 @@
                 this.authenticated = true;
                 this.user = data.user;
                 localStorage.setItem('battlepie_client_user', JSON.stringify(data.user));
+                if (!this.evtSource) this.initSse();
 
                 if (data.isLinked && data.linkedPlayer) {
                   this.isLinked = true;
@@ -347,7 +388,7 @@
               class="card p-6 flex items-center gap-5 min-h-[190px] h-full group hover:border-accent/40 transition relative overflow-hidden block">
               <!-- 3D Skin Body Model on Left -->
               <div class="w-20 sm:w-24 h-32 sm:h-36 flex-shrink-0 flex items-center justify-center">
-                <img :src="linkedPlayer.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(linkedPlayer.minecraftUsername) + '/right')"
+                <img :src="getSkinUrl(linkedPlayer)"
                      :alt="linkedPlayer.minecraftUsername"
                      class="h-full object-contain filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
               </div>
