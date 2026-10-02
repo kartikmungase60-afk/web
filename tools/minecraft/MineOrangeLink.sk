@@ -10,6 +10,11 @@
 #  4. Players type: /link <8-digit code>
 # ========================================================
 
+on script load:
+    if {mineorange::wiped_clean_v2} is not set:
+        delete {mineorange::linked::*}
+        set {mineorange::wiped_clean_v2} to true
+
 command /link [<text>]:
     description: Link your Minecraft account to Mine Orange Discord
     usage: /link <8-digit code>
@@ -34,6 +39,11 @@ command /link [<text>]:
         if arg-1 is "unlink":
             delete {mineorange::linked::%player's uuid%}
             send "&8[&6&lMine Orange&8]&r &eIn-game link status reset. To re-link, visit &fhttps://mineorange.fun/me" to player
+            stop
+
+        if arg-1 is "resetall" or "clearall" or "wipe":
+            delete {mineorange::linked::*}
+            send "&8[&6&lMine Orange&8]&r &a✔ All in-game player link records have been completely reset!" to player
             stop
 
         set {_code} to arg-1

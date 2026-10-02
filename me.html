@@ -710,9 +710,18 @@
             } catch (err) {}
           }
 
+          // Support manual reset via URL query param: ?reset=1 or ?unlink=1
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('reset') === '1' || urlParams.get('unlink') === '1') {
+            localStorage.removeItem('battlepie_linked_player');
+            localStorage.removeItem('battlepie_link_token');
+            this.isLinked = false;
+            this.linkedPlayer = null;
+          }
+
           // 1b. Check local client-side storage for cached Linked Player & Token (PREVENTS RESET ON REFRESH!)
           let linkToken = localStorage.getItem('battlepie_link_token') || '';
-          if (!this.linkedPlayer) {
+          if (!this.linkedPlayer && urlParams.get('reset') !== '1') {
             try {
               const cachedLinked = localStorage.getItem('battlepie_linked_player');
               if (cachedLinked) {
@@ -783,17 +792,20 @@
                   }
                   clearInterval(this.timer);
                   clearInterval(this.pollTimer);
-                } else if (this.isLinked && this.linkedPlayer && (linkToken || this.linkedPlayer.linkToken)) {
-                  // Resilient hold: Keep player profile active if signed link token exists!
-                  clearInterval(this.timer);
-                  clearInterval(this.pollTimer);
                 } else if (data.activeCode && data.activeCode.code) {
                   this.isLinked = false;
                   this.linkedPlayer = null;
+                  localStorage.removeItem('battlepie_linked_player');
+                  localStorage.removeItem('battlepie_link_token');
                   this.linkCode = data.activeCode.code;
                   this.secondsLeft = data.activeCode.expiresInSeconds || 120;
                   this.startCountdown();
+                  this.startPolling();
                 } else {
+                  this.isLinked = false;
+                  this.linkedPlayer = null;
+                  localStorage.removeItem('battlepie_linked_player');
+                  localStorage.removeItem('battlepie_link_token');
                   await this.generateNewCode();
                 }
 
@@ -802,29 +814,6 @@
                 }
                 if (data.serverBooster) {
                   this.discordBoosterActive = Boolean(data.serverBooster.active);
-                }
-
-                // If user is @kartik_xd1, ensure linked player profile is always bound
-                if (!this.isLinked && this.user.username && this.user.username.toLowerCase() === 'kartik_xd1') {
-                  this.isLinked = true;
-                  this.linkedPlayer = {
-                    discordId: this.user.id || '1528726101872869387',
-                    discordUsername: 'kartik_xd1',
-                    discordGlobalName: 'Kartik',
-                    minecraftUsername: 'Kartikplayzz',
-                    minecraftUuid: '89015a41-92ad-3a98-b6b4-67b3b0335d4a',
-                    accountType: 'Java Cracked (Offline Mode)',
-                    isBedrock: false,
-                    isCracked: true,
-                    isPremium: false,
-                    skinName: 'sr-recommendation-boy-wizzard',
-                    skinSource: 'SkinsRestorer Texture (sr-recommendation-boy-wizzard)',
-                    avatarUrl: 'https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128',
-                    skinUrl: 'https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right',
-                    linkedAt: '2026-10-01T10:03:57.507Z',
-                    lastSkinUpdate: '2026-10-01T10:05:27.698Z'
-                  };
-                  localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                 }
 
                 if (this.isLinked && this.linkedPlayer) {
@@ -842,30 +831,8 @@
           }
 
           // If backend couldn't be reached or no active code yet, but we are authenticated
-          if (this.authenticated) {
-            if (this.user && this.user.username && this.user.username.toLowerCase() === 'kartik_xd1') {
-              this.isLinked = true;
-              this.linkedPlayer = {
-                discordId: this.user.id || '1528726101872869387',
-                discordUsername: 'kartik_xd1',
-                discordGlobalName: 'Kartik',
-                minecraftUsername: 'Kartikplayzz',
-                minecraftUuid: '89015a41-92ad-3a98-b6b4-67b3b0335d4a',
-                accountType: 'Java Cracked (Offline Mode)',
-                isBedrock: false,
-                isCracked: true,
-                isPremium: false,
-                skinName: 'sr-recommendation-boy-wizzard',
-                skinSource: 'SkinsRestorer Texture (sr-recommendation-boy-wizzard)',
-                avatarUrl: 'https://mc-heads.net/avatar/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/128',
-                skinUrl: 'https://mc-heads.net/body/6f6aa4f1d20f719f462ae4fb0d598f34b336ee3a8dd1e23afeb3a1d4f1c9d933/right',
-                linkedAt: '2026-10-01T10:03:57.507Z',
-                lastSkinUpdate: '2026-10-01T10:05:27.698Z'
-              };
-              localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
-            } else if (!this.isLinked && !this.linkCode) {
-              await this.generateNewCode();
-            }
+          if (this.authenticated && !this.isLinked && !this.linkCode) {
+            await this.generateNewCode();
           }
         },
 

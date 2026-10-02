@@ -165,7 +165,7 @@ function generateOfflineUuid(username) {
 // Generate a cryptographically signed permanent Link Token (HMAC-SHA256)
 function generateLinkToken(record) {
   if (!record || !record.discordId || !record.minecraftUsername) return null;
-  const secret = config.serverSecret || 'battlepie_secret_token_123';
+  const secret = (config.serverSecret || 'battlepie_secret_token_123') + '_v2_clean';
   const payload = {
     discordId: record.discordId,
     discordUsername: record.discordUsername,
@@ -191,7 +191,7 @@ function verifyLinkToken(token) {
     const decoded = Buffer.from(token, 'base64url').toString('utf8');
     const tokenObj = JSON.parse(decoded);
     if (!tokenObj || !tokenObj.p || !tokenObj.s) return null;
-    const secret = config.serverSecret || 'battlepie_secret_token_123';
+    const secret = (config.serverSecret || 'battlepie_secret_token_123') + '_v2_clean';
     const serialized = JSON.stringify(tokenObj.p);
     const expectedSig = crypto.createHmac('sha256', secret).update(serialized).digest('hex');
     if (crypto.timingSafeEqual(Buffer.from(tokenObj.s), Buffer.from(expectedSig))) {
@@ -303,21 +303,6 @@ class PlayerLinkService {
           break;
         }
       }
-    }
-
-    // Fallback 2: Support formatted codes (e.g. BATTLE-8492)
-    if (!codeEntry && (cleanCode.toUpperCase() === 'BATTLE8492' || cleanCode === '8492')) {
-      codeEntry = {
-        code: cleanCode,
-        discordId: '1554913871825735831',
-        discordUser: {
-          id: '1554913871825735831',
-          username: 'kartik_xd1',
-          global_name: 'Kartik',
-          avatarUrl: '/uploads/kartik_avatar.png'
-        },
-        expiresAt: Date.now() + 3600 * 1000
-      };
     }
 
     if (!codeEntry) {
@@ -467,12 +452,6 @@ class PlayerLinkService {
         if (!item.linkToken) item.linkToken = generateLinkToken(item);
         return item;
       }
-      if (item.discordUsername && item.discordUsername.toLowerCase() === 'kartik_xd1') {
-        if (discordId === '1528726101872869387' || discordId === '1554913871825735831' || lowerUsername === 'kartik_xd1') {
-          if (!item.linkToken) item.linkToken = generateLinkToken(item);
-          return item;
-        }
-      }
     }
 
     // 3. Cryptographic Token Rehydration (Vercel Serverless & Server reboot resilience)
@@ -572,14 +551,54 @@ class PlayerLinkService {
   }
 
   // Unlink an account
-  static unlink(discordId) {
+  static async unlink(discordId) {
+    let unlinkedUsername = null;
     const existing = linkedPlayers.get(discordId);
-    if (!existing) return false;
-    linkedPlayers.delete(discordId);
-    mcToDiscord.delete(existing.minecraftUsername.toLowerCase());
-    saveLinks();
+    if (existing) {
+      unlinkedUsername = existing.minecraftUsername;
+      linkedPlayers.delete(discordId);
+      mcToDiscord.delete(existing.minecraftUsername.toLowerCase());
+      saveLinks();
+      PlayerLinkService.notifySse(discordId, { event: 'unlinked' });
+    } else {
+      for (const [id, item] of linkedPlayers.entries()) {
+        if (item.discordId === discordId || (item.discordUsername && item.discordUsername.toLowerCase() === (discordId || '').toLowerCase())) {
+          linkedPlayers.delete(id);
+          mcToDiscord.delete(item.minecraftUsername.toLowerCase());
+          saveLinks();
+          PlayerLinkService.notifySse(id, { event: 'unlinked' });
+          break;
+        }
+      }
+    }
 
-    PlayerLinkService.notifySse(discordId, { event: 'unlinked' });
+    // Delete from Firebase RTDB
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+    if (firebaseUrl) {
+      try {
+        const cleanUrl = firebaseUrl.replace(/\/$/, '');
+        await fetch(`${cleanUrl}/linked_players/${discordId}.json`, { method: 'DELETE' });
+      } catch (err) {}
+    }
+    return true;
+  }
+
+  // Clear all links across memory, disk, and Firebase (for full testing reset)
+  static async clearAll() {
+    linkedPlayers.clear();
+    mcToDiscord.clear();
+    activeCodes.clear();
+    userCodes.clear();
+    saveLinks();
+    saveCodes();
+
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+    if (firebaseUrl) {
+      try {
+        const cleanUrl = firebaseUrl.replace(/\/$/, '');
+        await fetch(`${cleanUrl}/linked_players.json`, { method: 'DELETE' });
+      } catch (err) {}
+    }
     return true;
   }
 

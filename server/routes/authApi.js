@@ -520,13 +520,20 @@ router.post('/link/verify', async (req, res) => {
 });
 
 // POST & GET /api/auth/link/unlink
-router.all('/link/unlink', (req, res) => {
+router.all('/link/unlink', async (req, res) => {
   const user = getSession(req);
-  if (!user || !user.id) {
+  const targetId = (user && user.id) || (req.body && req.body.user && req.body.user.id) || (req.body && req.body.discordId);
+  if (!targetId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const success = PlayerLinkService.unlink(user.id);
+  const success = await PlayerLinkService.unlink(targetId);
   res.json({ success });
+});
+
+// POST & GET /api/auth/link/resetall (Full testing reset endpoint)
+router.all('/link/resetall', async (req, res) => {
+  await PlayerLinkService.clearAll();
+  res.json({ success: true, message: 'All linked player data and link codes have been wiped across web server and Firebase database.' });
 });
 
 module.exports = router;
