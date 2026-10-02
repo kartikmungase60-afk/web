@@ -71,6 +71,28 @@ async function fetchFromFirebase() {
   return false;
 }
 
+// Fetch single player from Firebase Realtime Database
+async function fetchPlayerFromFirebase(discordId) {
+  const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+  if (!firebaseUrl || !discordId) return null;
+  try {
+    const cleanUrl = firebaseUrl.replace(/\/$/, '');
+    const res = await fetch(`${cleanUrl}/linked_players/${discordId}.json`);
+    if (res.ok) {
+      const item = await res.json();
+      if (item && item.minecraftUsername) {
+        linkedPlayers.set(discordId, item);
+        mcToDiscord.set(item.minecraftUsername.toLowerCase(), discordId);
+        saveLinks();
+        return item;
+      }
+    }
+  } catch (err) {
+    console.warn('[Firebase Single Fetch Error]', err.message);
+  }
+  return null;
+}
+
 // Load links from disk (and Firebase fallback)
 function loadLinks() {
   try {
@@ -511,8 +533,29 @@ class PlayerLinkService {
     return Array.from(linkedPlayers.values());
   }
 
+  // Ensure data is loaded from Firebase if empty (async helper for serverless/cold starts)
+  static async ensureLoaded() {
+    loadLinks();
+    if (linkedPlayers.size === 0) {
+      await fetchFromFirebase();
+    }
+  }
+
+  // Async getLinkStatus ensuring Firebase sync
+  static async getLinkStatusAsync(discordId, discordUsername, linkToken, cachedPlayer) {
+    await PlayerLinkService.ensureLoaded();
+    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, linkToken, cachedPlayer);
+    if (!link && discordId) {
+      const fromFb = await fetchPlayerFromFirebase(discordId);
+      if (fromFb) {
+        link = PlayerLinkService.getLinkStatus(discordId, discordUsername, linkToken, cachedPlayer);
+      }
+    }
+    return link;
+  }
+
   // Update skin for a player dynamically
-  static updatePlayerSkin(discordId, { skinUrl, avatarUrl, skinName, skinSource }) {
+  static updatePlayerSkin(discordId, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
     loadLinks();
     const link = linkedPlayers.get(discordId);
     if (!link) return false;
@@ -534,18 +577,28 @@ class PlayerLinkService {
       link.skinSource = skinSource;
       changed = true;
     }
+    if (textureHash !== undefined && link.textureHash !== textureHash) {
+      link.textureHash = textureHash;
+      changed = true;
+    }
+    if (skinModel !== undefined && link.skinModel !== skinModel) {
+      link.skinModel = skinModel;
+      changed = true;
+    }
 
     if (changed) {
       link.lastSkinUpdate = new Date().toISOString();
+      link.linkToken = generateLinkToken(link);
       linkedPlayers.set(discordId, link);
       saveLinks();
+      syncToFirebase(link);
 
       // Emit live SSE update to the web browser
       PlayerLinkService.notifySse(discordId, {
         event: 'skin_updated',
         player: link
       });
-      console.log(`[PlayerLinkService] Dynamic skin updated for ${link.minecraftUsername}: ${skinUrl}`);
+      console.log(`[PlayerLinkService] Dynamic skin updated for ${link.minecraftUsername}: ${skinUrl} (Synced to Firebase)`);
     }
     return changed;
   }

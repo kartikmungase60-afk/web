@@ -40,6 +40,117 @@
     };
   </script>
 
+  <script>
+    function homeProfileCard() {
+      let initialUser = null;
+      let initialPlayer = null;
+      let initialAuth = false;
+      let initialLinked = false;
+
+      try {
+        const rawUser = localStorage.getItem('battlepie_client_user');
+        if (rawUser) {
+          initialUser = JSON.parse(rawUser);
+          if (initialUser && initialUser.username) initialAuth = true;
+        }
+        const rawPlayer = localStorage.getItem('battlepie_linked_player');
+        if (rawPlayer) {
+          initialPlayer = JSON.parse(rawPlayer);
+          if (initialPlayer && initialPlayer.minecraftUsername) initialLinked = true;
+        }
+      } catch (e) {}
+
+      return {
+        authenticated: initialAuth,
+        user: initialUser,
+        isLinked: initialLinked,
+        linkedPlayer: initialPlayer,
+
+        init() {
+          this.checkStatus();
+          window.addEventListener('storage', () => this.checkLocal());
+          document.addEventListener('battlepie:auth:changed', () => this.checkLocal());
+        },
+
+        checkLocal() {
+          try {
+            const rawUser = localStorage.getItem('battlepie_client_user');
+            this.user = rawUser ? JSON.parse(rawUser) : null;
+            this.authenticated = !!(this.user && this.user.username);
+
+            const rawPlayer = localStorage.getItem('battlepie_linked_player');
+            this.linkedPlayer = rawPlayer ? JSON.parse(rawPlayer) : null;
+            this.isLinked = !!(this.linkedPlayer && this.linkedPlayer.minecraftUsername);
+          } catch (e) {}
+        },
+
+        async checkStatus() {
+          try {
+            const sessionId = localStorage.getItem('battlepie_session_id') || '';
+            const linkToken = localStorage.getItem('battlepie_link_token') || '';
+            
+            const payload = {
+              user: this.user,
+              session_id: sessionId,
+              linkToken: linkToken || (this.linkedPlayer && this.linkedPlayer.linkToken) || '',
+              cachedLinkedPlayer: this.linkedPlayer
+            };
+
+            const res = await fetch('/api/auth/link/status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Session-Id': sessionId,
+                'X-Link-Token': linkToken || ''
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data.authenticated && data.user) {
+                this.authenticated = true;
+                this.user = data.user;
+                localStorage.setItem('battlepie_client_user', JSON.stringify(data.user));
+
+                if (data.isLinked && data.linkedPlayer) {
+                  this.isLinked = true;
+                  this.linkedPlayer = data.linkedPlayer;
+                  localStorage.setItem('battlepie_linked_player', JSON.stringify(data.linkedPlayer));
+                  if (data.linkToken || data.linkedPlayer.linkToken) {
+                    localStorage.setItem('battlepie_link_token', data.linkToken || data.linkedPlayer.linkToken);
+                  }
+                } else {
+                  this.isLinked = false;
+                  this.linkedPlayer = null;
+                  localStorage.removeItem('battlepie_linked_player');
+                }
+              } else if (!this.user) {
+                this.authenticated = false;
+                this.user = null;
+                this.isLinked = false;
+                this.linkedPlayer = null;
+              }
+            }
+          } catch (err) {}
+        },
+
+        formatDate(dateVal) {
+          if (!dateVal) return '03 Oct 2026, 01:25';
+          const d = new Date(dateVal);
+          if (isNaN(d.getTime())) return String(dateVal);
+          const day = String(d.getDate()).padStart(2, '0');
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const month = months[d.getMonth()];
+          const year = d.getFullYear();
+          const hours = String(d.getHours()).padStart(2, '0');
+          const mins = String(d.getMinutes()).padStart(2, '0');
+          return `${day} ${month} ${year}, ${hours}:${mins}`;
+        }
+      };
+    }
+  </script>
+
   <!-- Battlepie Core Stylesheet -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -228,21 +339,79 @@
     <section id="profile" class="max-w-6xl mx-auto px-4 -mt-16 relative z-10">
       <div class="grid md:grid-cols-2 gap-4">
 
-        <!-- Panel 1: Profile -->
-        <div class="card p-6 flex flex-col justify-between min-h-[190px]">
-          <div>
-            <div class="text-[10px] uppercase tracking-widest text-white/50 mb-2 font-mono">Your profile</div>
-            <div class="font-display font-semibold text-xl mb-1">Sign in to get started</div>
-            <p class="text-white/60 text-sm">Link your Discord and your Minecraft account to manage 2FA and password
-              resets.</p>
-          </div>
-          <a href="login.html" class="btn btn-accent self-start mt-4">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.07.07 0 0 0-.073.035c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.073-.036A19.73 19.73 0 0 0 3.683 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.099.245.197.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.548-13.66a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.974 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-            </svg>
-            Login with Discord
-          </a>
+        <!-- Panel 1: Profile (Dynamic matching Screenshot 2) -->
+        <div x-data="homeProfileCard()" x-init="init()" class="h-full">
+          <!-- State 1: Authenticated & Linked to Minecraft (Matches Screenshot 2) -->
+          <template x-if="authenticated && isLinked && linkedPlayer">
+            <a href="me.html"
+              class="card p-6 flex items-center gap-5 min-h-[190px] h-full group hover:border-accent/40 transition relative overflow-hidden block">
+              <!-- 3D Skin Body Model on Left -->
+              <div class="w-20 sm:w-24 h-32 sm:h-36 flex-shrink-0 flex items-center justify-center">
+                <img :src="linkedPlayer.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(linkedPlayer.minecraftUsername) + '/right')"
+                     :alt="linkedPlayer.minecraftUsername"
+                     class="h-full object-contain filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+              </div>
+
+              <!-- Right Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] uppercase tracking-widest text-white/50 font-mono">PROFILE</span>
+                  <svg class="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+
+                <div class="font-display font-bold text-2xl text-white truncate mt-1 tracking-tight" x-text="linkedPlayer.minecraftUsername"></div>
+                <div class="text-white/50 text-xs font-mono truncate" x-text="'@' + (user ? user.username : 'player')"></div>
+
+                <div class="mt-4 pt-3 border-t border-white/5 space-y-1 text-xs font-mono">
+                  <div class="flex items-center justify-between">
+                    <span class="text-white/40">FIRST JOINED</span>
+                    <span class="text-white/80" x-text="formatDate(linkedPlayer.firstJoined || linkedPlayer.linkedAt)">03 Oct 2026, 01:25</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-white/40">LAST SEEN</span>
+                    <span class="text-white/80" x-text="formatDate(linkedPlayer.lastSeen || linkedPlayer.linkedAt)">03 Oct 2026, 01:25</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </template>
+
+          <!-- State 2: Authenticated but Not Linked -->
+          <template x-if="authenticated && (!isLinked || !linkedPlayer)">
+            <div class="card p-6 flex flex-col justify-between min-h-[190px] h-full">
+              <div>
+                <div class="text-[10px] uppercase tracking-widest text-white/50 mb-2 font-mono">YOUR PROFILE</div>
+                <div class="font-display font-semibold text-xl mb-1">Link your Minecraft account</div>
+                <p class="text-white/60 text-sm">Signed in as <span class="text-white font-medium" x-text="'@' + (user ? user.username : '')"></span>. Connect your in-game player to track stats, manage skins, and enable 2FA.</p>
+              </div>
+              <a href="me.html" class="btn btn-accent self-start mt-4 flex items-center gap-2">
+                <svg class="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <span>Link Minecraft Account</span>
+              </a>
+            </div>
+          </template>
+
+          <!-- State 3: Not Logged In -->
+          <template x-if="!authenticated">
+            <div class="card p-6 flex flex-col justify-between min-h-[190px] h-full">
+              <div>
+                <div class="text-[10px] uppercase tracking-widest text-white/50 mb-2 font-mono">Your profile</div>
+                <div class="font-display font-semibold text-xl mb-1">Sign in to get started</div>
+                <p class="text-white/60 text-sm">Link your Discord and your Minecraft account to manage 2FA and password resets.</p>
+              </div>
+              <a href="login.html" class="btn btn-accent self-start mt-4">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.07.07 0 0 0-.073.035c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.073-.036A19.73 19.73 0 0 0 3.683 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.099.245.197.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.548-13.66a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.974 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                </svg>
+                <span>Login with Discord</span>
+              </a>
+            </div>
+          </template>
         </div>
 
         <!-- Panel 2: Support Store -->

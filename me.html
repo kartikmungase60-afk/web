@@ -209,6 +209,12 @@
                       </svg>
                       <span x-text="skinRefreshing ? 'Syncing...' : 'Sync Skin'">Sync Skin</span>
                     </button>
+                    <!-- Change Skin Link -->
+                    <a href="change-skin.html"
+                       title="Change or upload custom skin"
+                       class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#ff2e1f]/30 bg-[#ff2e1f]/10 hover:bg-[#ff2e1f]/20 text-[#ff4232] hover:text-white text-[11px] font-mono transition cursor-pointer">
+                      <span>Change Skin →</span>
+                    </a>
                   </div>
                   <div class="text-xs text-white/50 font-mono mt-1.5"
                        x-text="'Linked ' + formatLinkDate(linkedPlayer.linkedAt) + ' · UUID ' + (linkedPlayer.minecraftUuid ? linkedPlayer.minecraftUuid.substring(0, 10) + '...' : '89015a41...')">

@@ -1,5 +1,27 @@
 [
   {
+    "id": "log_1790972363167_aa32",
+    "timestamp": "2026-10-02T20:19:23.167Z",
+    "date": "2026-10-03",
+    "time": "01:49:23",
+    "ip": "::1",
+    "category": "Players",
+    "action": "UPDATE_SKIN",
+    "details": "Player 'Kartikplayzz' updated skin to 'fox'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_1790972345767_6fsj",
+    "timestamp": "2026-10-02T20:19:05.767Z",
+    "date": "2026-10-03",
+    "time": "01:49:05",
+    "ip": "::1",
+    "category": "Players",
+    "action": "UPDATE_SKIN",
+    "details": "Player 'Kartikplayzz' updated skin to 'kermit'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
     "id": "log_1790968834653_4xt3",
     "timestamp": "2026-10-02T19:20:34.652Z",
     "date": "2026-10-03",

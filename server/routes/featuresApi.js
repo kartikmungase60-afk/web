@@ -198,32 +198,115 @@ router.post('/mailbox/respond', (req, res) => {
 // =========================================================================
 // 4. CHANGE SKIN & CHANGE PASSWORD
 // =========================================================================
-router.post('/skin/upload', (req, res) => {
+// 4. CHANGE SKIN & CHANGE PASSWORD
+// =========================================================================
+
+// POST /api/skin/set (Set skin by name, preset, or Minecraft player username)
+router.post('/skin/set', async (req, res) => {
   try {
-    const { username, base64Data, filename } = req.body;
-    if (!username || !base64Data) {
+    const { username, skinName, skinType } = req.body;
+    if (!username || !skinName) {
+      return res.status(400).json({ success: false, error: 'Username and skin name/preset are required' });
+    }
+
+    const cleanSkin = skinName.trim();
+    const link = PlayerLinkService.getLinkByUsername(username);
+    if (!link) {
+      return res.status(404).json({ success: false, error: 'Linked Minecraft account not found' });
+    }
+
+    // mc-heads renders by skin name/hash
+    const skinUrl = `https://mc-heads.net/body/${encodeURIComponent(cleanSkin)}/right`;
+    const avatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(cleanSkin)}/128`;
+
+    PlayerLinkService.updatePlayerSkin(link.discordId, {
+      skinName: cleanSkin,
+      skinUrl,
+      avatarUrl,
+      skinSource: `Website (${cleanSkin})`
+    });
+
+    // Write to SkinsRestorer on server via SFTP
+    try {
+      const skinsRestorerService = require('../services/skinsRestorerService');
+      const isCustom = cleanSkin.startsWith('sr-recommendation-');
+      await skinsRestorerService.setPlayerSkinFile(
+        link.minecraftUuid,
+        cleanSkin,
+        isCustom ? 'CUSTOM' : (skinType || 'PLAYER')
+      );
+    } catch (e) {
+      console.warn('[featuresApi] Could not write skin to SFTP:', e.message);
+    }
+
+    const updated = PlayerLinkService.getLinkStatus(link.discordId);
+
+    dataManager.addAuditLog({
+      ip: getClientIp(req),
+      category: 'Players',
+      action: 'UPDATE_SKIN',
+      details: `Player '${username}' updated skin to '${cleanSkin}'`
+    });
+
+    res.json({
+      success: true,
+      message: `Skin '${cleanSkin}' applied successfully! Rejoin or use /skin update in-game if online.`,
+      skinUrl,
+      avatarUrl,
+      player: updated
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/skin/upload', async (req, res) => {
+  try {
+    const { username, base64Data, filename, skinName } = req.body;
+    if (!username || (!base64Data && !skinName)) {
       return res.status(400).json({ success: false, error: 'Username and skin image data are required' });
     }
 
-    const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(cleanBase64, 'base64');
-
-    if (buffer.length > 512 * 1024) {
-      return res.status(400).json({ success: false, error: 'File size exceeds 512 KB limit' });
+    const link = PlayerLinkService.getLinkByUsername(username);
+    if (!link) {
+      return res.status(404).json({ success: false, error: 'Linked Minecraft account not found' });
     }
 
-    const skinFilename = 'skin_' + encodeURIComponent(username.toLowerCase()) + '_' + Date.now() + '.png';
-    const skinPath = path.join(__dirname, '../../uploads', skinFilename);
-    fs.writeFileSync(skinPath, buffer);
+    let publicSkinUrl = null;
+    let publicAvatarUrl = null;
 
-    const publicSkinUrl = `/uploads/${skinFilename}`;
+    if (skinName) {
+      const cleanSkin = skinName.trim();
+      publicSkinUrl = `https://mc-heads.net/body/${encodeURIComponent(cleanSkin)}/right`;
+      publicAvatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(cleanSkin)}/128`;
+      PlayerLinkService.updatePlayerSkin(link.discordId, {
+        skinName: cleanSkin,
+        skinUrl: publicSkinUrl,
+        avatarUrl: publicAvatarUrl,
+        skinSource: `Website (${cleanSkin})`
+      });
+    } else if (base64Data) {
+      const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(cleanBase64, 'base64');
 
-    // Update in linked players if present
-    const link = PlayerLinkService.getLinkByUsername(username);
-    if (link) {
+      if (buffer.length > 512 * 1024) {
+        return res.status(400).json({ success: false, error: 'File size exceeds 512 KB limit' });
+      }
+
+      const skinFilename = 'skin_' + encodeURIComponent(username.toLowerCase()) + '_' + Date.now() + '.png';
+      try {
+        const uploadsDir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, skinFilename), buffer);
+      } catch (e) {}
+
+      // Keep preview accessible
+      publicSkinUrl = `https://mc-heads.net/body/${encodeURIComponent(username)}/right`;
+      publicAvatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(username)}/128`;
+
       PlayerLinkService.updatePlayerSkin(link.discordId, {
         skinUrl: publicSkinUrl,
-        avatarUrl: publicSkinUrl,
+        avatarUrl: publicAvatarUrl,
         skinSource: 'Custom Upload'
       });
     }
@@ -232,20 +315,23 @@ router.post('/skin/upload', (req, res) => {
       ip: getClientIp(req),
       category: 'Players',
       action: 'UPDATE_SKIN',
-      details: `Player '${username}' uploaded a new custom Minecraft skin`
+      details: `Player '${username}' updated custom Minecraft skin`
     });
+
+    const updated = PlayerLinkService.getLinkStatus(link.discordId);
 
     res.json({
       success: true,
-      message: 'Skin applied successfully! It will show on the server momentarily.',
-      skinUrl: publicSkinUrl
+      message: 'Skin applied successfully! It will show across the network momentarily.',
+      skinUrl: publicSkinUrl || (updated && updated.skinUrl),
+      player: updated
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-router.post('/skin/reset', (req, res) => {
+router.post('/skin/reset', async (req, res) => {
   try {
     const { username } = req.body;
     if (!username) {
@@ -254,11 +340,19 @@ router.post('/skin/reset', (req, res) => {
 
     const link = PlayerLinkService.getLinkByUsername(username);
     if (link) {
+      const defaultSkinUrl = `https://mc-heads.net/body/Steve/right`;
+      const defaultAvatarUrl = `https://mc-heads.net/avatar/Steve/128`;
       PlayerLinkService.updatePlayerSkin(link.discordId, {
-        skinUrl: null,
-        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(username)}/128`,
+        skinName: null,
+        skinUrl: defaultSkinUrl,
+        avatarUrl: defaultAvatarUrl,
         skinSource: 'Default'
       });
+
+      try {
+        const skinsRestorerService = require('../services/skinsRestorerService');
+        await skinsRestorerService.deletePlayerSkinFile(link.minecraftUuid);
+      } catch (e) {}
     }
 
     dataManager.addAuditLog({
@@ -270,7 +364,8 @@ router.post('/skin/reset', (req, res) => {
 
     res.json({
       success: true,
-      message: 'Skin reset to default. Custom skin removed on the server.'
+      message: 'Skin reset to default Steve model.',
+      skinUrl: 'https://mc-heads.net/body/Steve/right'
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

@@ -156,6 +156,110 @@ class SkinsRestorerService {
       }
     });
   }
+
+  // Set skin directly into SkinsRestorer player file via SFTP
+  async setPlayerSkinFile(playerUuid, skinIdentifier, type = 'PLAYER') {
+    return new Promise((resolve) => {
+      const conn = new Client();
+      const timer = setTimeout(() => {
+        try { conn.end(); } catch (e) {}
+        resolve(false);
+      }, 7000);
+
+      conn.on('ready', () => {
+        conn.sftp((err, sftp) => {
+          if (err) {
+            clearTimeout(timer);
+            try { conn.end(); } catch (e) {}
+            return resolve(false);
+          }
+          const playerFilePath = `plugins/SkinsRestorer/players/${playerUuid}.player`;
+          const payload = JSON.stringify({
+            uniqueId: playerUuid,
+            skinIdentifier: {
+              identifier: skinIdentifier,
+              type: type
+            },
+            offlineModeWarningDismissed: false,
+            history: [
+              {
+                timestamp: Math.floor(Date.now() / 1000),
+                skinIdentifier: {
+                  identifier: skinIdentifier,
+                  type: type
+                }
+              }
+            ],
+            dataVersion: 2
+          }, null, 2);
+
+          sftp.writeFile(playerFilePath, Buffer.from(payload, 'utf8'), (wErr) => {
+            clearTimeout(timer);
+            try { conn.end(); } catch (e) {}
+            if (wErr) {
+              console.warn('[SkinsRestorer] Failed to write player file:', wErr.message);
+              return resolve(false);
+            }
+            console.log(`[SkinsRestorer] Successfully wrote skin '${skinIdentifier}' for UUID ${playerUuid}`);
+            resolve(true);
+          });
+        });
+      });
+
+      conn.on('error', (err) => {
+        clearTimeout(timer);
+        console.warn('[SkinsRestorer SFTP error]', err.message);
+        resolve(false);
+      });
+
+      try {
+        conn.connect(this.config);
+      } catch (e) {
+        clearTimeout(timer);
+        resolve(false);
+      }
+    });
+  }
+
+  // Delete skin from SkinsRestorer player file (reset to default)
+  async deletePlayerSkinFile(playerUuid) {
+    return new Promise((resolve) => {
+      const conn = new Client();
+      const timer = setTimeout(() => {
+        try { conn.end(); } catch (e) {}
+        resolve(false);
+      }, 7000);
+
+      conn.on('ready', () => {
+        conn.sftp((err, sftp) => {
+          if (err) {
+            clearTimeout(timer);
+            try { conn.end(); } catch (e) {}
+            return resolve(false);
+          }
+          const playerFilePath = `plugins/SkinsRestorer/players/${playerUuid}.player`;
+          sftp.unlink(playerFilePath, (uErr) => {
+            clearTimeout(timer);
+            try { conn.end(); } catch (e) {}
+            resolve(!uErr);
+          });
+        });
+      });
+
+      conn.on('error', () => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+
+      try {
+        conn.connect(this.config);
+      } catch (e) {
+        clearTimeout(timer);
+        resolve(false);
+      }
+    });
+  }
 }
 
 module.exports = new SkinsRestorerService();
+

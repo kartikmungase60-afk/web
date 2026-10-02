@@ -119,6 +119,20 @@
     <!-- Main Skin Management Card -->
     <div class="rounded-2xl bg-[#0e1017] border border-[#1b1f2a] shadow-2xl p-6 sm:p-8">
       
+      <!-- Top Tab Switcher: Presets vs Upload -->
+      <div class="flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
+        <button type="button" @click="activeTab = 'presets'"
+                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2"
+                :class="activeTab === 'presets' ? 'bg-[#ff2e1f] text-white shadow-lg shadow-[#ff2e1f]/20' : 'bg-white/5 text-white/70 hover:text-white hover:bg-white/10'">
+          <span>🎨 Presets & Name</span>
+        </button>
+        <button type="button" @click="activeTab = 'upload'"
+                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2"
+                :class="activeTab === 'upload' ? 'bg-[#ff2e1f] text-white shadow-lg shadow-[#ff2e1f]/20' : 'bg-white/5 text-white/70 hover:text-white hover:bg-white/10'">
+          <span>📁 Upload PNG Skin</span>
+        </button>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
         <!-- Left Column: Skin 3D Preview -->
@@ -132,13 +146,51 @@
                    alt="Skin Preview" class="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
             </template>
           </div>
-          <span class="text-xs text-[#8c92a2] mt-3 font-medium">Current skin</span>
+          <div class="mt-3 text-center">
+            <span class="text-xs text-[#8c92a2] font-medium block">Active Skin Model</span>
+            <span class="text-[11px] font-mono text-white/70 truncate max-w-[150px] inline-block" x-text="currentSkinName || 'Default Steve'"></span>
+          </div>
         </div>
 
-        <!-- Right Column: Upload Form & Dropzone -->
-        <div class="md:col-span-8 flex flex-col justify-between">
+        <!-- Right Column: Mode 1 - Presets & Name Input -->
+        <div class="md:col-span-8 flex flex-col justify-between" x-show="activeTab === 'presets'">
           <div>
-            <h2 class="font-display font-bold text-xl text-white mb-1.5">Upload a new skin</h2>
+            <h2 class="font-display font-bold text-xl text-white mb-1.5">Choose a skin or enter any name</h2>
+            <p class="text-xs text-[#8c92a2] leading-relaxed mb-5">
+              Click a popular skin preset below or enter any Minecraft player username to automatically clone their skin.
+            </p>
+
+            <!-- Popular Presets Grid -->
+            <div class="grid grid-cols-3 sm:grid-cols-3 gap-2.5 mb-5">
+              <template x-for="p in presets" :key="p.id">
+                <button type="button" @click="applyNamedSkin(p.id)" :disabled="uploading"
+                        class="p-2.5 rounded-xl border border-white/10 bg-black/20 hover:bg-white/10 hover:border-accent/50 transition flex flex-col items-center gap-1.5 text-center cursor-pointer group">
+                  <img :src="p.preview" :alt="p.name" class="w-10 h-10 rounded-lg object-cover bg-white/5 border border-white/10 group-hover:scale-105 transition-transform">
+                  <span class="text-xs font-semibold text-white/90 group-hover:text-white" x-text="p.name"></span>
+                </button>
+              </template>
+            </div>
+
+            <!-- Custom Name Input Form -->
+            <div class="p-3.5 rounded-xl bg-black/30 border border-white/10">
+              <label class="block text-[11px] font-mono text-white/60 mb-2 uppercase tracking-wider">Custom Minecraft Name or Skin ID</label>
+              <div class="flex items-center gap-2">
+                <input type="text" x-model="customSkinInput" @keydown.enter.prevent="applyCustomName()"
+                       placeholder="e.g. Notch, dream, Grian, fox..."
+                       class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent">
+                <button type="button" @click="applyCustomName()" :disabled="!customSkinInput.trim() || uploading"
+                        class="px-4 py-2 rounded-xl bg-[#ff2e1f] hover:bg-[#e02618] text-white font-semibold text-xs sm:text-sm transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Mode 2 - Upload Form & Dropzone -->
+        <div class="md:col-span-8 flex flex-col justify-between" x-show="activeTab === 'upload'">
+          <div>
+            <h2 class="font-display font-bold text-xl text-white mb-1.5">Upload a custom PNG skin</h2>
             <p class="text-xs text-[#8c92a2] leading-relaxed mb-6">
               Drop in a standard Minecraft skin PNG (64×64). The server will apply it in-game and it will show here once it propagates.
             </p>
@@ -177,7 +229,7 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-3">
-              <button type="button" @click="applySkin()" :disabled="!selectedFile || uploading"
+              <button type="button" @click="applyUploadedSkin()" :disabled="!selectedFile || uploading"
                       class="px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer"
                       :class="selectedFile ? 'bg-[#ff2e1f] hover:bg-[#e02618] text-white shadow-lg shadow-[#ff2e1f]/20' : 'bg-white/5 text-white/30 cursor-not-allowed'">
                 <template x-if="uploading">
@@ -236,18 +288,102 @@
         selectedFile: null,
         base64Data: null,
         previewUrl: null,
+        currentSkinName: 'sr-recommendation-fox',
+        customSkinInput: '',
+        activeTab: 'presets',
         dragOver: false,
         uploading: false,
         resetting: false,
 
+        presets: [
+          { id: 'fox', name: 'Fox 🦊', preview: 'https://mc-heads.net/avatar/c823bceddc2ad07ccbe585ac68a06d8834086869f261d3becb08884633a51f53/64' },
+          { id: 'boy-black-sweater', name: 'Boy Hoodie 👦', preview: 'https://mc-heads.net/avatar/boy-black-sweater/64' },
+          { id: 'kermit', name: 'Kermit 🐸', preview: 'https://mc-heads.net/avatar/kermit/64' },
+          { id: 'Notch', name: 'Notch 👑', preview: 'https://mc-heads.net/avatar/Notch/64' },
+          { id: 'dream', name: 'Dream 🟢', preview: 'https://mc-heads.net/avatar/dream/64' },
+          { id: 'technoblade', name: 'Techno 🐷', preview: 'https://mc-heads.net/avatar/technoblade/64' }
+        ],
+
         init() {
-          const storedPlayer = localStorage.getItem('mo_player');
-          if (storedPlayer) {
-            try {
-              const p = JSON.parse(storedPlayer);
+          this.loadFromStorage();
+          this.syncWithServer();
+          window.addEventListener('storage', () => this.loadFromStorage());
+          document.addEventListener('battlepie:auth:changed', () => this.loadFromStorage());
+        },
+
+        loadFromStorage() {
+          try {
+            const rawPlayer = localStorage.getItem('battlepie_linked_player') || localStorage.getItem('mo_player');
+            if (rawPlayer) {
+              const p = JSON.parse(rawPlayer);
               if (p.minecraftUsername) this.username = p.minecraftUsername;
               if (p.skinUrl) this.previewUrl = p.skinUrl;
-            } catch(e) {}
+              if (p.skinName) this.currentSkinName = p.skinName;
+            }
+          } catch(e) {}
+        },
+
+        async syncWithServer() {
+          try {
+            const sessionId = localStorage.getItem('battlepie_session_id') || '';
+            const linkToken = localStorage.getItem('battlepie_link_token') || '';
+            const rawUser = localStorage.getItem('battlepie_client_user');
+            const user = rawUser ? JSON.parse(rawUser) : null;
+            const rawPlayer = localStorage.getItem('battlepie_linked_player');
+            const cachedPlayer = rawPlayer ? JSON.parse(rawPlayer) : null;
+
+            const res = await fetch('/api/auth/link/status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user, session_id: sessionId, linkToken, cachedLinkedPlayer: cachedPlayer })
+            });
+
+            if (res.ok) {
+              const d = await res.json();
+              if (d && d.linkedPlayer) {
+                this.username = d.linkedPlayer.minecraftUsername || this.username;
+                if (d.linkedPlayer.skinUrl) this.previewUrl = d.linkedPlayer.skinUrl;
+                if (d.linkedPlayer.skinName) this.currentSkinName = d.linkedPlayer.skinName;
+                localStorage.setItem('battlepie_linked_player', JSON.stringify(d.linkedPlayer));
+                localStorage.setItem('mo_player', JSON.stringify(d.linkedPlayer));
+              }
+            }
+          } catch (e) {}
+        },
+
+        async applyCustomName() {
+          if (!this.customSkinInput.trim()) return;
+          await this.applyNamedSkin(this.customSkinInput.trim());
+          this.customSkinInput = '';
+        },
+
+        async applyNamedSkin(skinName) {
+          if (!skinName) return;
+          this.uploading = true;
+
+          try {
+            const res = await fetch('/api/skin/set', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: this.username,
+                skinName: skinName
+              })
+            });
+
+            const d = await res.json();
+            if (d && d.success) {
+              this.previewUrl = d.skinUrl;
+              this.currentSkinName = skinName;
+              this.updateLocalCache(d.player || { skinUrl: d.skinUrl, skinName });
+              alert(d.message || `Skin '${skinName}' applied successfully!`);
+            } else {
+              alert(d.error || 'Failed to apply skin');
+            }
+          } catch (e) {
+            alert('Error: ' + e.message);
+          } finally {
+            this.uploading = false;
           }
         },
 
@@ -283,71 +419,86 @@
         cancelSelection() {
           this.selectedFile = null;
           this.base64Data = null;
-          this.previewUrl = null;
+          this.loadFromStorage();
         },
 
-        applySkin() {
+        async applyUploadedSkin() {
           if (!this.base64Data) return;
           this.uploading = true;
 
-          fetch('/api/skin/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username: this.username,
-              base64Data: this.base64Data,
-              filename: this.selectedFile.name
-            })
-          })
-          .then(r => r.json())
-          .then(d => {
+          try {
+            const res = await fetch('/api/skin/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: this.username,
+                base64Data: this.base64Data,
+                filename: this.selectedFile ? this.selectedFile.name : 'custom_skin.png'
+              })
+            });
+
+            const d = await res.json();
             if (d && d.success) {
               alert(d.message || 'Skin applied successfully!');
               this.selectedFile = null;
-              // update player cache
-              const storedPlayer = localStorage.getItem('mo_player');
-              if (storedPlayer) {
-                try {
-                  const p = JSON.parse(storedPlayer);
-                  p.skinUrl = d.skinUrl;
-                  localStorage.setItem('mo_player', JSON.stringify(p));
-                } catch(e) {}
-              }
+              this.base64Data = null;
+              if (d.skinUrl) this.previewUrl = d.skinUrl;
+              this.currentSkinName = 'Custom Upload';
+              this.updateLocalCache(d.player || { skinUrl: d.skinUrl, skinName: 'Custom Upload' });
             } else {
               alert(d.error || 'Failed to upload skin');
             }
-          })
-          .catch(e => {
+          } catch (e) {
             alert('Error: ' + e.message);
-          })
-          .finally(() => {
+          } finally {
             this.uploading = false;
-          });
+          }
         },
 
-        resetSkin() {
+        updateLocalCache(updatedFields) {
+          try {
+            let p = {};
+            const raw = localStorage.getItem('battlepie_linked_player') || localStorage.getItem('mo_player');
+            if (raw) p = JSON.parse(raw);
+            Object.assign(p, updatedFields);
+            localStorage.setItem('battlepie_linked_player', JSON.stringify(p));
+            localStorage.setItem('mo_player', JSON.stringify(p));
+            document.dispatchEvent(new CustomEvent('battlepie:auth:changed'));
+          } catch(e) {}
+        },
+
+        async resetSkin() {
           if (!confirm('Are you sure you want to reset your skin to default Steve?')) return;
           this.resetting = true;
 
-          fetch('/api/skin/reset', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: this.username })
-          })
-          .then(r => r.json())
-          .then(d => {
+          try {
+            const res = await fetch('/api/skin/reset', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: this.username })
+            });
+
+            const d = await res.json();
             if (d && d.success) {
-              this.previewUrl = `https://mc-heads.net/body/${encodeURIComponent(this.username)}/right`;
+              this.previewUrl = `https://mc-heads.net/body/Steve/right`;
+              this.currentSkinName = 'Default Steve';
               this.selectedFile = null;
+              this.base64Data = null;
+              this.updateLocalCache({
+                skinUrl: this.previewUrl,
+                avatarUrl: 'https://mc-heads.net/avatar/Steve/128',
+                skinName: null,
+                skinSource: 'Default'
+              });
               alert(d.message || 'Skin reset to default Steve model.');
+            } else {
+              alert(d.error || 'Failed to reset skin');
             }
-          })
-          .catch(e => {
+          } catch (e) {
             alert('Error resetting skin: ' + e.message);
-          })
-          .finally(() => {
+          } finally {
             this.resetting = false;
-          });
+          }
         }
       };
     }
