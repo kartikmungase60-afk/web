@@ -23,7 +23,55 @@ const userCodes = new Map(); // discordId -> code
 // Active SSE subscribers: discordId -> Set of res objects
 const sseClients = new Map();
 
-// Load links from disk
+// Sync to external Firebase Realtime Database if configured
+async function syncToFirebase(record) {
+  const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+  if (!firebaseUrl || !record || !record.discordId) return;
+  try {
+    const cleanUrl = firebaseUrl.replace(/\/$/, '');
+    await fetch(`${cleanUrl}/linked_players/${record.discordId}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+    console.log(`[Firebase] Synced player ${record.minecraftUsername} to Firebase RTDB.`);
+  } catch (err) {
+    console.warn('[Firebase Sync Error]', err.message);
+  }
+}
+
+// Fetch all from Firebase Realtime Database
+async function fetchFromFirebase() {
+  const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+  if (!firebaseUrl) return false;
+  try {
+    const cleanUrl = firebaseUrl.replace(/\/$/, '');
+    const res = await fetch(`${cleanUrl}/linked_players.json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        let count = 0;
+        for (const [id, item] of Object.entries(data)) {
+          if (item && item.minecraftUsername) {
+            linkedPlayers.set(id, item);
+            mcToDiscord.set(item.minecraftUsername.toLowerCase(), id);
+            count++;
+          }
+        }
+        if (count > 0) {
+          saveLinks();
+          console.log(`[Firebase] Successfully loaded ${count} linked players from Firebase RTDB.`);
+          return true;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Firebase Fetch Error]', err.message);
+  }
+  return false;
+}
+
+// Load links from disk (and Firebase fallback)
 function loadLinks() {
   try {
     if (fs.existsSync(LINKS_FILE)) {
@@ -38,6 +86,11 @@ function loadLinks() {
     }
   } catch (err) {
     console.error('[PlayerLinkService] Error loading links file:', err.message);
+  }
+
+  // If memory is empty and Firebase is configured, fetch from Firebase
+  if (linkedPlayers.size === 0 && (process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl))) {
+    fetchFromFirebase().catch(() => {});
   }
 }
 
@@ -107,6 +160,45 @@ function generateOfflineUuid(username) {
 
   const hex = md5Bytes.toString('hex');
   return `${hex.substr(0, 8)}-${hex.substr(8, 4)}-${hex.substr(12, 4)}-${hex.substr(16, 4)}-${hex.substr(20)}`;
+}
+
+// Generate a cryptographically signed permanent Link Token (HMAC-SHA256)
+function generateLinkToken(record) {
+  if (!record || !record.discordId || !record.minecraftUsername) return null;
+  const secret = config.serverSecret || 'battlepie_secret_token_123';
+  const payload = {
+    discordId: record.discordId,
+    discordUsername: record.discordUsername,
+    minecraftUsername: record.minecraftUsername,
+    minecraftUuid: record.minecraftUuid || '',
+    accountType: record.accountType || 'Java Cracked',
+    isBedrock: Boolean(record.isBedrock),
+    skinName: record.skinName || null,
+    avatarUrl: record.avatarUrl || '',
+    skinUrl: record.skinUrl || '',
+    linkedAt: record.linkedAt || new Date().toISOString()
+  };
+  const serialized = JSON.stringify(payload);
+  const sig = crypto.createHmac('sha256', secret).update(serialized).digest('hex');
+  const tokenObj = { p: payload, s: sig };
+  return Buffer.from(JSON.stringify(tokenObj)).toString('base64url');
+}
+
+// Verify and decode a permanent Link Token
+function verifyLinkToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const tokenObj = JSON.parse(decoded);
+    if (!tokenObj || !tokenObj.p || !tokenObj.s) return null;
+    const secret = config.serverSecret || 'battlepie_secret_token_123';
+    const serialized = JSON.stringify(tokenObj.p);
+    const expectedSig = crypto.createHmac('sha256', secret).update(serialized).digest('hex');
+    if (crypto.timingSafeEqual(Buffer.from(tokenObj.s), Buffer.from(expectedSig))) {
+      return tokenObj.p;
+    }
+  } catch (e) {}
+  return null;
 }
 
 class PlayerLinkService {
@@ -213,12 +305,8 @@ class PlayerLinkService {
       }
     }
 
-    // Fallback 2: Support recent codes, formatted codes (BATTLE-8492), or owner Kartikplayzz
-    if (!codeEntry && (
-      cleanCode === '18663716' || cleanCode === '23686449' || cleanCode === '76315989' ||
-      cleanCode === '95980245' || cleanCode.toUpperCase() === 'BATTLE8492' || cleanCode === '8492' ||
-      cleanUsername.toLowerCase() === 'kartikplayzz'
-    )) {
+    // Fallback 2: Support formatted codes (e.g. BATTLE-8492)
+    if (!codeEntry && (cleanCode.toUpperCase() === 'BATTLE8492' || cleanCode === '8492')) {
       codeEntry = {
         code: cleanCode,
         discordId: '1554913871825735831',
@@ -230,11 +318,6 @@ class PlayerLinkService {
         },
         expiresAt: Date.now() + 3600 * 1000
       };
-    }
-
-    // Fallback 3: If only 1 code exists in the system and cleanCode is an 8-digit code
-    if (!codeEntry && activeCodes.size === 1 && cleanCode.length === 8) {
-      codeEntry = activeCodes.values().next().value;
     }
 
     if (!codeEntry) {
@@ -309,10 +392,13 @@ class PlayerLinkService {
       linkedAt: new Date().toISOString()
     };
 
+    linkRecord.linkToken = generateLinkToken(linkRecord);
+
     // Store link
     linkedPlayers.set(codeEntry.discordId, linkRecord);
     mcToDiscord.set(cleanUsername.toLowerCase(), codeEntry.discordId);
     saveLinks();
+    syncToFirebase(linkRecord);
 
     // Invalidate all active codes for this user upon successful link
     for (const [c, item] of activeCodes.entries()) {
@@ -338,25 +424,89 @@ class PlayerLinkService {
     };
   }
 
-  // Get link status for a Discord user
-  static getLinkStatus(discordId, discordUsername = null) {
-    if (!discordId && !discordUsername) return null;
+  // Generate a cryptographically signed permanent Link Token
+  static generateLinkToken(record) {
+    return generateLinkToken(record);
+  }
+
+  // Verify and decode a permanent Link Token
+  static verifyLinkToken(token) {
+    return verifyLinkToken(token);
+  }
+
+  // Sync player to Firebase Realtime Database
+  static syncToFirebase(record) {
+    return syncToFirebase(record);
+  }
+
+  // Fetch all from Firebase Realtime Database
+  static fetchFromFirebase() {
+    return fetchFromFirebase();
+  }
+
+  // Get link status for a Discord user (with token & cache resilience)
+  static getLinkStatus(discordId, discordUsername = null, linkToken = null, cachedPlayer = null) {
+    if (!discordId && !discordUsername && !linkToken && !cachedPlayer) return null;
     loadLinks();
+
+    // 1. Direct memory/file lookup by Discord ID
     if (discordId && linkedPlayers.has(discordId)) {
-      return linkedPlayers.get(discordId);
+      const rec = linkedPlayers.get(discordId);
+      if (!rec.linkToken) rec.linkToken = generateLinkToken(rec);
+      return rec;
     }
+
+    // 2. Fallback username lookup
     const lowerUsername = (discordUsername || '').toLowerCase();
     for (const item of linkedPlayers.values()) {
-      if (discordId && item.discordId === discordId) return item;
+      if (discordId && item.discordId === discordId) {
+        if (!item.linkToken) item.linkToken = generateLinkToken(item);
+        return item;
+      }
       if (lowerUsername && item.discordUsername && item.discordUsername.toLowerCase() === lowerUsername) {
+        if (!item.linkToken) item.linkToken = generateLinkToken(item);
         return item;
       }
       if (item.discordUsername && item.discordUsername.toLowerCase() === 'kartik_xd1') {
         if (discordId === '1528726101872869387' || discordId === '1554913871825735831' || lowerUsername === 'kartik_xd1') {
+          if (!item.linkToken) item.linkToken = generateLinkToken(item);
           return item;
         }
       }
     }
+
+    // 3. Cryptographic Token Rehydration (Vercel Serverless & Server reboot resilience)
+    const tokenToVerify = linkToken || (cachedPlayer && cachedPlayer.linkToken);
+    if (tokenToVerify) {
+      const verified = verifyLinkToken(tokenToVerify);
+      if (verified && (verified.discordId === discordId || (lowerUsername && verified.discordUsername && verified.discordUsername.toLowerCase() === lowerUsername))) {
+        const restored = {
+          discordId: verified.discordId,
+          discordUsername: verified.discordUsername,
+          discordGlobalName: (cachedPlayer && cachedPlayer.discordGlobalName) || verified.discordUsername,
+          minecraftUsername: verified.minecraftUsername,
+          minecraftUuid: verified.minecraftUuid,
+          accountType: verified.accountType || 'Java Cracked',
+          isBedrock: Boolean(verified.isBedrock),
+          isCracked: Boolean(verified.accountType && verified.accountType.includes('Cracked')),
+          isPremium: Boolean(verified.accountType && verified.accountType.includes('Premium')),
+          skinName: verified.skinName || (cachedPlayer && cachedPlayer.skinName) || null,
+          skinSource: (cachedPlayer && cachedPlayer.skinSource) || 'SkinsRestorer / Mojang',
+          avatarUrl: verified.avatarUrl || (cachedPlayer && cachedPlayer.avatarUrl) || `https://mc-heads.net/avatar/${verified.minecraftUsername}/128`,
+          skinUrl: verified.skinUrl || (cachedPlayer && cachedPlayer.skinUrl) || `https://mc-heads.net/body/${verified.minecraftUsername}/right`,
+          linkedAt: verified.linkedAt || new Date().toISOString(),
+          lastSkinUpdate: new Date().toISOString(),
+          linkToken: tokenToVerify
+        };
+        linkedPlayers.set(restored.discordId, restored);
+        mcToDiscord.set(restored.minecraftUsername.toLowerCase(), restored.discordId);
+        saveLinks();
+        syncToFirebase(restored);
+        console.log(`[PlayerLinkService] Re-hydrated linked player ${restored.minecraftUsername} from verified Link Token!`);
+        return restored;
+      }
+    }
+
     return null;
   }
 
@@ -447,6 +597,11 @@ class PlayerLinkService {
         if (set.size === 0) sseClients.delete(discordId);
       }
     });
+  }
+
+  // Save links explicitly
+  static save() {
+    saveLinks();
   }
 
   // Notify SSE clients

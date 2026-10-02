@@ -1,23 +1,8 @@
+const fs = require('fs');
+const path = require('path');
 const { Client } = require('ssh2');
 
-const skriptContent = `# ========================================================
-# Mine Orange Network - Discord Account Linker Bridge
-# Compatible with Skript 2.6+ (No external addons required)
-# ========================================================
-
-command /link [<text>]:
-    description: Link your Minecraft account to Mine Orange Discord
-    usage: /link <8-digit code>
-    aliases: /mclink, /discordlink
-    trigger:
-        if arg-1 is not set:
-            send "§8[§6§lMine Orange§8] §cUsage: §e/link <8-digit code>" to player
-            send "§8[§6§lMine Orange§8] §7Get your link code at: §fhttps://mineorange.fun/me" to player
-            stop
-        
-        # Forward to native Java plugin handler
-        make player execute "/mineorangelink:link %arg-1%"
-`;
+const skriptContent = fs.readFileSync(path.join(__dirname, 'MineOrangeLink.sk'), 'utf8');
 
 const conn = new Client();
 conn.on('ready', () => {

@@ -38,4 +38,19 @@ router.get('/player/:username', async (req, res) => {
   }
 });
 
+// GET /api-public/resolve-profile?username=...&bedrock=true
+router.get('/resolve-profile', async (req, res) => {
+  const username = req.query.username;
+  if (!username || !username.trim()) {
+    return res.status(400).json({ error: 'Username query parameter is required' });
+  }
+  try {
+    const isBedrock = req.query.bedrock === '1' || req.query.bedrock === 'true';
+    const profile = await resolveMinecraftProfile(username.trim(), isBedrock);
+    res.json(profile);
+  } catch (err) {
+    res.status(500).json({ error: 'Profile resolution failed', details: err.message });
+  }
+});
+
 module.exports = router;

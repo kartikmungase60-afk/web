@@ -5,6 +5,7 @@ module.exports = {
   port: process.env.PORT || 3000,
   env: process.env.NODE_ENV || 'development',
   serverSecret: process.env.SERVER_SECRET || 'battlepie_secret_token_123',
+  firebaseDatabaseUrl: process.env.FIREBASE_DATABASE_URL || 'https://mine-orange-default-rtdb.asia-southeast1.firebasedatabase.app',
   
   // Minecraft Server Ping target
   minecraft: {

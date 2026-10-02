@@ -221,9 +221,11 @@ router.post('/skin/upload', (req, res) => {
     // Update in linked players if present
     const link = PlayerLinkService.getLinkByUsername(username);
     if (link) {
-      link.skinUrl = publicSkinUrl;
-      link.avatarUrl = publicSkinUrl;
-      PlayerLinkService.save && PlayerLinkService.save();
+      PlayerLinkService.updatePlayerSkin(link.discordId, {
+        skinUrl: publicSkinUrl,
+        avatarUrl: publicSkinUrl,
+        skinSource: 'Custom Upload'
+      });
     }
 
     dataManager.addAuditLog({
@@ -252,9 +254,11 @@ router.post('/skin/reset', (req, res) => {
 
     const link = PlayerLinkService.getLinkByUsername(username);
     if (link) {
-      link.skinUrl = null;
-      link.avatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(username)}/128`;
-      PlayerLinkService.save && PlayerLinkService.save();
+      PlayerLinkService.updatePlayerSkin(link.discordId, {
+        skinUrl: null,
+        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(username)}/128`,
+        skinSource: 'Default'
+      });
     }
 
     dataManager.addAuditLog({

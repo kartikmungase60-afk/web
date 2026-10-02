@@ -16,8 +16,24 @@ command /link [<text>]:
     aliases: /mclink, /discordlink, /molink
     trigger:
         if arg-1 is not set:
+            if {mineorange::linked::%player's uuid%} is set:
+                send "&8[&6&lMine Orange&8]&r &a✔ You are ALREADY linked to Mine Orange Web!" to player
+                send "&8[&6&lMine Orange&8]&r &7View your profile and claim perks at: &fhttps://mineorange.fun/me" to player
+                stop
             send "&8[&6&lMine Orange&8]&r &cUsage: &e/link <8-digit code>" to player
             send "&8[&6&lMine Orange&8]&r &7Get your link code at: &fhttps://mineorange.fun/me" to player
+            stop
+
+        if arg-1 is "status":
+            if {mineorange::linked::%player's uuid%} is set:
+                send "&8[&6&lMine Orange&8]&r &a✔ Linked! Dashboard: &fhttps://mineorange.fun/me" to player
+            else:
+                send "&8[&6&lMine Orange&8]&r &c✖ Not linked. Visit &fhttps://mineorange.fun/me &cfor your code." to player
+            stop
+
+        if arg-1 is "unlink":
+            delete {mineorange::linked::%player's uuid%}
+            send "&8[&6&lMine Orange&8]&r &eIn-game link status reset. To re-link, visit &fhttps://mineorange.fun/me" to player
             stop
 
         set {_code} to arg-1
@@ -25,13 +41,11 @@ command /link [<text>]:
         replace all " " with "" in {_code}
         replace all "<" with "" in {_code}
         replace all ">" with "" in {_code}
-        set {_target} to player
-
-        if length of {_code} is 8:
-            send "&8[&6&lMine Orange&8]&r &7Verifying code &e%{_code}% &7with Mine Orange Network..." to {_target}
-            wait 10 ticks
-            kick {_target} due to "&a&lLinked Successfully%nl%%nl%&7Your Minecraft account is now linked to Mine Orange.%nl%&ePlease rejoin the server."
+        if length of {_code} is not 8:
+            send "&8[&6&lMine Orange&8]&r &c&lFAILED: &7Please provide a valid 8-digit link code." to player
+            send "&8[&6&lMine Orange&8]&r &7Visit &fhttps://mineorange.fun/me &7to get your code." to player
             stop
-        else:
-            send "&8[&6&lMine Orange&8]&r &c&lFAILED: &7Please provide a valid 8-digit link code." to {_target}
-            send "&8[&6&lMine Orange&8]&r &7Visit &fhttps://mineorange.fun/me &7to get your code." to {_target}
+
+        # Forward directly to MineOrangeLink Java plugin which contacts https://mineorange.fun/api/auth/link/ingame
+        execute player command "mineorangelink:link %{_code}%"
+        set {mineorange::linked::%player's uuid%} to true

@@ -1,5 +1,49 @@
 [
   {
+    "id": "log_1790968834653_4xt3",
+    "timestamp": "2026-10-02T19:20:34.652Z",
+    "date": "2026-10-03",
+    "time": "00:50:34",
+    "ip": "::1",
+    "category": "Auth",
+    "action": "ADMIN_LOGIN_FAILED",
+    "details": "Failed admin login attempt with user: 'admin'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_1790967609103_h2hy",
+    "timestamp": "2026-10-02T19:00:09.103Z",
+    "date": "2026-10-03",
+    "time": "00:30:09",
+    "ip": "::1",
+    "category": "Auth",
+    "action": "ADMIN_LOGIN_FAILED",
+    "details": "Failed admin login attempt with user: 'admin'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_1790965961758_yee9",
+    "timestamp": "2026-10-02T18:32:41.758Z",
+    "date": "2026-10-03",
+    "time": "00:02:41",
+    "ip": "::1",
+    "category": "Auth",
+    "action": "ADMIN_LOGIN_FAILED",
+    "details": "Failed admin login attempt with user: 'admin'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
+    "id": "log_1790965910058_nf7c",
+    "timestamp": "2026-10-02T18:31:50.058Z",
+    "date": "2026-10-03",
+    "time": "00:01:50",
+    "ip": "::1",
+    "category": "Auth",
+    "action": "ADMIN_LOGIN_FAILED",
+    "details": "Failed admin login attempt with user: 'admin'",
+    "adminAccount": "[Protected Admin]"
+  },
+  {
     "id": "log_1790877810250_1p7l",
     "timestamp": "2026-10-01T18:03:30.250Z",
     "date": "2026-10-01",

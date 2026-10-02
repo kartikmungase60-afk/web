@@ -60,36 +60,31 @@ function getSession(req) {
     return sessions.get(sessionId);
   }
 
-  // Also support authenticated Discord user profile passed in body
-  if (req.body && req.body.user) {
-    const u = req.body.user;
-    if (u.id) return u;
-    if (u.username) {
-      u.id = 'usr_' + u.username.toLowerCase();
-      return u;
+  // If a valid session token is presented (e.g. across serverless instances)
+  if (sessionId && sessionId.startsWith('usr_')) {
+    if (req.body && req.body.user && req.body.user.id) {
+      return req.body.user;
+    }
+    if (req.query && req.query.user) {
+      try {
+        const u = typeof req.query.user === 'string' ? JSON.parse(decodeURIComponent(req.query.user)) : req.query.user;
+        if (u && u.id) return u;
+      } catch (e) {}
     }
   }
-  // Also support authenticated Discord user profile passed in query string (?user=...)
-  if (req.query && req.query.user) {
-    try {
-      const u = typeof req.query.user === 'string' ? JSON.parse(decodeURIComponent(req.query.user)) : req.query.user;
-      if (u) {
-        if (u.id) return u;
-        if (u.username) {
-          u.id = 'usr_' + u.username.toLowerCase();
-          return u;
-        }
-      }
-    } catch (e) {}
+
+  // In non-production development mode only, allow explicit dev bypass
+  if (config.env !== 'production') {
+    if (req.body && req.body.user && req.body.user.id) return req.body.user;
+    if (req.query && req.query.user_id) {
+      return {
+        id: req.query.user_id,
+        username: req.query.username || 'DevUser',
+        global_name: req.query.global_name || req.query.username || 'DevUser'
+      };
+    }
   }
-  // Also support ?user_id=...
-  if (req.query && req.query.user_id) {
-    return {
-      id: req.query.user_id,
-      username: req.query.username || 'DiscordUser',
-      global_name: req.query.global_name || req.query.username || 'DiscordUser'
-    };
-  }
+
   return null;
 }
 
@@ -306,6 +301,12 @@ router.get('/me', (req, res) => {
   res.json({ authenticated: true, user });
 });
 
+// GET /api/auth/check
+router.get('/check', (req, res) => {
+  const user = getSession(req);
+  res.json({ authenticated: !!user, user: user || null });
+});
+
 // =========================================================================
 // 3. MINECRAFT LINKING ENGINE (CRACK + PREMIUM + BEDROCK PE)
 // =========================================================================
@@ -320,27 +321,50 @@ router.all('/link/status', (req, res) => {
     user = req.body.user;
   }
 
+  const linkToken = req.headers['x-link-token'] || (req.body && req.body.linkToken) || req.query.linkToken;
+  const cachedPlayer = req.body && req.body.cachedLinkedPlayer;
+
+  // If user session was lost in cold start, verify if linkToken can restore the user
+  if ((!user || !user.id) && linkToken) {
+    const verified = PlayerLinkService.verifyLinkToken(linkToken);
+    if (verified && verified.discordId) {
+      user = {
+        id: verified.discordId,
+        username: verified.discordUsername,
+        global_name: (cachedPlayer && cachedPlayer.discordGlobalName) || verified.discordUsername,
+        avatarUrl: (cachedPlayer && cachedPlayer.avatarUrl) || 'https://cdn.discordapp.com/embed/avatars/0.png'
+      };
+    }
+  }
+
   if (!user || !user.id) {
     return res.json({
       authenticated: false,
       user: null,
       isLinked: false,
       linkedPlayer: null,
-      activeCode: null
+      activeCode: null,
+      linkToken: null
     });
   }
 
-  const linkRecord = PlayerLinkService.getLinkStatus(user.id, user.username);
-  let activeCode = PlayerLinkService.getActiveCode(user.id);
-  if (!activeCode && !linkRecord) {
-    activeCode = PlayerLinkService.createLinkCode(user);
+  const linkRecord = PlayerLinkService.getLinkStatus(user.id, user.username, linkToken, cachedPlayer);
+  let activeCode = null;
+  if (!linkRecord) {
+    activeCode = PlayerLinkService.getActiveCode(user.id);
+    if (!activeCode) {
+      activeCode = PlayerLinkService.createLinkCode(user);
+    }
   }
+
+  const effectiveToken = linkRecord ? (linkRecord.linkToken || PlayerLinkService.generateLinkToken(linkRecord)) : null;
 
   res.json({
     authenticated: true,
     user,
     isLinked: !!linkRecord,
     linkedPlayer: linkRecord,
+    linkToken: effectiveToken,
     youtubeMembership: {
       active: true,
       perks: ['[YT-MEMBER] Chat Prefix', '1.5x Daily Coins', 'Priority Queue']
@@ -448,8 +472,8 @@ router.get('/link/events', (req, res) => {
 router.post('/link/ingame', async (req, res) => {
   const { code, player, uuid, isBedrock, skinName, serverSecret } = req.body;
 
-  // Optional shared secret check
-  if (config.serverSecret && serverSecret && serverSecret !== config.serverSecret) {
+  // Required shared server secret check
+  if (config.serverSecret && (!serverSecret || serverSecret !== config.serverSecret)) {
     return res.status(403).json({ success: false, error: 'Unauthorized Minecraft server secret' });
   }
 

@@ -9,12 +9,12 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": "sr-recommendation-green-bird",
-    "skinSource": "SkinsRestorer Texture (sr-recommendation-green-bird)",
-    "avatarUrl": "https://mc-heads.net/avatar/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/128",
-    "skinUrl": "https://mc-heads.net/body/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/right",
+    "skinName": "sr-recommendation-boy-black-sweater",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-black-sweater)",
+    "avatarUrl": "https://mc-heads.net/avatar/71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12/128",
+    "skinUrl": "https://mc-heads.net/body/71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12/right",
     "linkedAt": "2026-10-01T10:03:57.507Z",
-    "lastSkinUpdate": "2026-10-01T19:33:12.113Z"
+    "lastSkinUpdate": "2026-10-02T18:31:41.673Z"
   },
   {
     "discordId": "1554913871825735831",
@@ -26,11 +26,44 @@
     "isBedrock": false,
     "isCracked": true,
     "isPremium": false,
-    "skinName": "sr-recommendation-green-bird",
-    "skinSource": "SkinsRestorer Texture (sr-recommendation-green-bird)",
-    "avatarUrl": "https://mc-heads.net/avatar/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/128",
-    "skinUrl": "https://mc-heads.net/body/cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f/right",
-    "linkedAt": "2026-10-01T19:33:44.742Z",
-    "lastSkinUpdate": "2026-10-01T19:33:45.033Z"
+    "skinName": "sr-recommendation-boy-black-sweater",
+    "skinSource": "SkinsRestorer Texture (sr-recommendation-boy-black-sweater)",
+    "avatarUrl": "https://mc-heads.net/avatar/71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12/128",
+    "skinUrl": "https://mc-heads.net/body/71a7064af618ba6d5fddbde6a5b599dd35d51f34b2567a3a4c5a36e8798d8d12/right",
+    "linkedAt": "2026-10-02T10:19:47.959Z",
+    "lastSkinUpdate": "2026-10-02T18:31:42.864Z"
+  },
+  {
+    "discordId": "probe_user",
+    "discordUsername": "probegamer",
+    "discordGlobalName": "probegamer",
+    "minecraftUsername": "ProbePlayerMC",
+    "minecraftUuid": "fab79d95-56c4-330a-8eaa-77e41b03dbad",
+    "accountType": "Java Cracked (Offline Mode)",
+    "isBedrock": false,
+    "isCracked": true,
+    "isPremium": false,
+    "skinName": null,
+    "skinSource": "Default / Mojang",
+    "avatarUrl": "https://mc-heads.net/avatar/ProbePlayerMC/128",
+    "skinUrl": "https://mc-heads.net/body/ProbePlayerMC/right",
+    "linkedAt": "2026-10-02T18:33:05.267Z"
+  },
+  {
+    "discordId": "test_discord_999888",
+    "discordUsername": "testgamer",
+    "discordGlobalName": "Test Gamer",
+    "minecraftUsername": "PermanentMCPlayer",
+    "minecraftUuid": "99887766-5544-3322-1100-aabbccddeeff",
+    "accountType": "Java Cracked (Offline Mode)",
+    "isBedrock": false,
+    "isCracked": true,
+    "isPremium": false,
+    "skinName": "Steve",
+    "skinSource": "SkinsRestorer (Steve)",
+    "avatarUrl": "https://mc-heads.net/avatar/Steve/128",
+    "skinUrl": "https://mc-heads.net/body/Steve/right",
+    "linkedAt": "2026-10-02T19:20:20.031Z",
+    "linkToken": "eyJwIjp7ImRpc2NvcmRJZCI6InRlc3RfZGlzY29yZF85OTk4ODgiLCJkaXNjb3JkVXNlcm5hbWUiOiJ0ZXN0Z2FtZXIiLCJtaW5lY3JhZnRVc2VybmFtZSI6IlBlcm1hbmVudE1DUGxheWVyIiwibWluZWNyYWZ0VXVpZCI6Ijk5ODg3NzY2LTU1NDQtMzMyMi0xMTAwLWFhYmJjY2RkZWVmZiIsImFjY291bnRUeXBlIjoiSmF2YSBDcmFja2VkIChPZmZsaW5lIE1vZGUpIiwiaXNCZWRyb2NrIjpmYWxzZSwic2tpbk5hbWUiOiJTdGV2ZSIsImF2YXRhclVybCI6Imh0dHBzOi8vbWMtaGVhZHMubmV0L2F2YXRhci9TdGV2ZS8xMjgiLCJza2luVXJsIjoiaHR0cHM6Ly9tYy1oZWFkcy5uZXQvYm9keS9TdGV2ZS9yaWdodCIsImxpbmtlZEF0IjoiMjAyNi0xMC0wMlQxOToyMDoyMC4wMzFaIn0sInMiOiJlYTE2OTZlY2FmODViNmRhODM5ZWQyNzVkY2NlMjdhOWNlYTJlMGU4NzRkMWUxNGM5MWI0YTg2ZTQyMDg1ZmM3In0"
   }
 ]

@@ -710,6 +710,25 @@
             } catch (err) {}
           }
 
+          // 1b. Check local client-side storage for cached Linked Player & Token (PREVENTS RESET ON REFRESH!)
+          let linkToken = localStorage.getItem('battlepie_link_token') || '';
+          if (!this.linkedPlayer) {
+            try {
+              const cachedLinked = localStorage.getItem('battlepie_linked_player');
+              if (cachedLinked) {
+                const lp = JSON.parse(cachedLinked);
+                if (lp && lp.minecraftUsername) {
+                  this.isLinked = true;
+                  this.linkedPlayer = lp;
+                  if (!linkToken && lp.linkToken) {
+                    linkToken = lp.linkToken;
+                    localStorage.setItem('battlepie_link_token', linkToken);
+                  }
+                }
+              }
+            } catch (err) {}
+          }
+
           // If no user is logged in, DO NOT auto-login. Stay cleanly logged out.
           if (!currentUser) {
             this.authenticated = false;
@@ -730,14 +749,17 @@
             const api = getApiBase();
             const payload = {
               user: currentUser,
-              session_id: sessionId
+              session_id: sessionId,
+              linkToken: linkToken || (this.linkedPlayer && this.linkedPlayer.linkToken) || '',
+              cachedLinkedPlayer: this.linkedPlayer
             };
 
             const res = await fetch(api + '/api/auth/link/status', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'X-Session-Id': sessionId
+                'X-Session-Id': sessionId,
+                'X-Link-Token': linkToken || ''
               },
               body: JSON.stringify(payload),
               credentials: 'include'
@@ -751,8 +773,30 @@
                 if (!this.user.avatarUrl || this.user.avatarUrl.includes('/uploads/')) {
                   this.user.avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
                 }
-                this.isLinked = Boolean(data.isLinked);
-                this.linkedPlayer = data.linkedPlayer;
+
+                if (data.isLinked && data.linkedPlayer) {
+                  this.isLinked = true;
+                  this.linkedPlayer = data.linkedPlayer;
+                  localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
+                  if (data.linkToken || data.linkedPlayer.linkToken) {
+                    localStorage.setItem('battlepie_link_token', data.linkToken || data.linkedPlayer.linkToken);
+                  }
+                  clearInterval(this.timer);
+                  clearInterval(this.pollTimer);
+                } else if (this.isLinked && this.linkedPlayer && (linkToken || this.linkedPlayer.linkToken)) {
+                  // Resilient hold: Keep player profile active if signed link token exists!
+                  clearInterval(this.timer);
+                  clearInterval(this.pollTimer);
+                } else if (data.activeCode && data.activeCode.code) {
+                  this.isLinked = false;
+                  this.linkedPlayer = null;
+                  this.linkCode = data.activeCode.code;
+                  this.secondsLeft = data.activeCode.expiresInSeconds || 120;
+                  this.startCountdown();
+                } else {
+                  await this.generateNewCode();
+                }
+
                 if (data.youtubeMembership) {
                   this.youtubeMembershipActive = Boolean(data.youtubeMembership.active);
                 }
@@ -780,18 +824,13 @@
                     linkedAt: '2026-10-01T10:03:57.507Z',
                     lastSkinUpdate: '2026-10-01T10:05:27.698Z'
                   };
+                  localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                 }
 
                 if (this.isLinked && this.linkedPlayer) {
                   localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                   clearInterval(this.timer);
                   clearInterval(this.pollTimer);
-                } else if (data.activeCode && data.activeCode.code) {
-                  this.linkCode = data.activeCode.code;
-                  this.secondsLeft = data.activeCode.expiresInSeconds || 120;
-                  this.startCountdown();
-                } else {
-                  await this.generateNewCode();
                 }
                 return;
               }
@@ -894,15 +933,23 @@
                   this.isLinked = true;
                   this.linkedPlayer = data.player;
                   localStorage.setItem('battlepie_linked_player', JSON.stringify(data.player));
+                  if (data.player.linkToken) {
+                    localStorage.setItem('battlepie_link_token', data.player.linkToken);
+                  }
                   clearInterval(this.timer);
                   if (window.zlToast) window.zlToast(`Linked to ${data.player.minecraftUsername} (${data.player.accountType})!`);
                 } else if (data.event === 'skin_updated' && data.player) {
                   this.linkedPlayer = data.player;
                   localStorage.setItem('battlepie_linked_player', JSON.stringify(data.player));
+                  if (data.player.linkToken) {
+                    localStorage.setItem('battlepie_link_token', data.player.linkToken);
+                  }
                   if (window.zlToast) window.zlToast('Minecraft player skin updated!');
                 } else if (data.event === 'unlinked') {
                   this.isLinked = false;
                   this.linkedPlayer = null;
+                  localStorage.removeItem('battlepie_linked_player');
+                  localStorage.removeItem('battlepie_link_token');
                   this.generateNewCode();
                 }
               } catch (err) {}
@@ -918,13 +965,20 @@
             try {
               const api = getApiBase();
               const sessionId = localStorage.getItem('battlepie_session_id') || '';
+              const linkToken = localStorage.getItem('battlepie_link_token') || '';
               const res = await fetch(api + '/api/auth/link/status', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'X-Session-Id': sessionId
+                  'X-Session-Id': sessionId,
+                  'X-Link-Token': linkToken
                 },
-                body: JSON.stringify({ user: this.user, session_id: sessionId }),
+                body: JSON.stringify({
+                  user: this.user,
+                  session_id: sessionId,
+                  linkToken: linkToken,
+                  cachedLinkedPlayer: this.linkedPlayer
+                }),
                 credentials: 'include'
               });
               if (res.ok) {
@@ -935,6 +989,9 @@
                   this.isLinked = true;
                   this.linkedPlayer = data.linkedPlayer;
                   localStorage.setItem('battlepie_linked_player', JSON.stringify(data.linkedPlayer));
+                  if (data.linkToken || data.linkedPlayer.linkToken) {
+                    localStorage.setItem('battlepie_link_token', data.linkToken || data.linkedPlayer.linkToken);
+                  }
 
                   if (wasNotLinked) {
                     clearInterval(this.timer);
@@ -968,6 +1025,9 @@
               if (data.player) {
                 this.linkedPlayer = data.player;
                 localStorage.setItem('battlepie_linked_player', JSON.stringify(data.player));
+                if (data.player.linkToken) {
+                  localStorage.setItem('battlepie_link_token', data.player.linkToken);
+                }
                 if (window.zlToast) window.zlToast('Skin refreshed from in-game server!');
               }
             }
@@ -1007,6 +1067,7 @@
               this.isLinked = false;
               this.linkedPlayer = null;
               localStorage.removeItem('battlepie_linked_player');
+              localStorage.removeItem('battlepie_link_token');
               await this.generateNewCode();
               this.startPolling();
               if (window.zlToast) window.zlToast('Minecraft account unlinked');
