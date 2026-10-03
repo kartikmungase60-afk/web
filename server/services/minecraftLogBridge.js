@@ -172,8 +172,8 @@ class MinecraftLogBridge {
     // 1. Detect /link <8-digit code>
     const linkRegex = /\[.*?\]\s*\[Server thread\/INFO\]:\s*([a-zA-Z0-9_\*\.]+)\s+issued server command:\s*\/link\s+([0-9a-zA-Z\-_]+)/i;
 
-    // 2. Detect skin change commands (/skin <name>, /skin url ..., /sr set ...)
-    const skinCmdRegex = /\[.*?\]\s*\[Server thread\/INFO\]:\s*([a-zA-Z0-9_\*\.]+)\s+issued server command:\s*\/(?:skin|sr|skinsrestorer)\s*(.*)/i;
+    // 2. Detect skin change commands (/skin <name>, /skins, /skin url ..., /sr set ...)
+    const skinCmdRegex = /\[.*?\]\s*\[Server thread\/INFO\]:\s*([a-zA-Z0-9_\*\.]+)\s+issued server command:\s*\/(?:skins?|sr|skinsrestorer)\s*(.*)/i;
 
     // 3. Detect SkinsRestorer success messages
     const srLogRegex = /\[.*?\]\s*\[(?:Server thread|Async Chat Thread.*?)\/INFO\]:\s*\[SkinsRestorer\]\s*(?:Successfully set skin of|Set skin of|Skin of)\s*([a-zA-Z0-9_\*\.]+)/i;

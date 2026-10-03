@@ -15,7 +15,13 @@ const SKIN_PRESETS = {
   'sr-recommendation-green-bird': { id: 'sr-recommendation-green-bird', type: 'CUSTOM', hash: 'cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f', name: 'Green Bird 🐦' },
   'green-bird': { id: 'sr-recommendation-green-bird', type: 'CUSTOM', hash: 'cb50beab76e56472637c304a54b330780e278decb017707bf7604e484e4d6c9f', name: 'Green Bird 🐦' },
   'sr-recommendation-person-black-shirt': { id: 'sr-recommendation-person-black-shirt', type: 'CUSTOM', hash: '1f5eaa74dd1df1912a1e1ab70f32ba008032ae0daa6bfe2b9ff137f9d8671930', name: 'Black Shirt 👕' },
-  'person-black-shirt': { id: 'sr-recommendation-person-black-shirt', type: 'CUSTOM', hash: '1f5eaa74dd1df1912a1e1ab70f32ba008032ae0daa6bfe2b9ff137f9d8671930', name: 'Black Shirt 👕' }
+  'person-black-shirt': { id: 'sr-recommendation-person-black-shirt', type: 'CUSTOM', hash: '1f5eaa74dd1df1912a1e1ab70f32ba008032ae0daa6bfe2b9ff137f9d8671930', name: 'Black Shirt 👕' },
+  'sr-recommendation-discord-wumpus': { id: 'sr-recommendation-discord-wumpus', type: 'CUSTOM', hash: '6c84d1a9095a63f47546720fe7f6edf03e12276e062b853e207a5c697f1e521', name: 'Discord Wumpus 👾' },
+  'discord-wumpus': { id: 'sr-recommendation-discord-wumpus', type: 'CUSTOM', hash: '6c84d1a9095a63f47546720fe7f6edf03e12276e062b853e207a5c697f1e521', name: 'Discord Wumpus 👾' },
+  'wumpus': { id: 'sr-recommendation-discord-wumpus', type: 'CUSTOM', hash: '6c84d1a9095a63f47546720fe7f6edf03e12276e062b853e207a5c697f1e521', name: 'Discord Wumpus 👾' },
+  'sr-recommendation-smily-face': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' },
+  'smily-face': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' },
+  'smiley': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' }
 };
 
 class SkinsRestorerService {
