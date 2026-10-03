@@ -350,14 +350,17 @@ router.all('/link/status', async (req, res) => {
 
   let linkRecord = await PlayerLinkService.getLinkStatusAsync(user.id, user.username, linkToken, cachedPlayer);
 
-  // If player is linked, verify if their skin in SkinsRestorer needs to be synced
-  if (linkRecord && linkRecord.minecraftUuid) {
+  // If player is linked and active SFTP session exists (local daemon mode), verify if their skin changed
+  if (linkRecord && linkRecord.minecraftUuid && !process.env.VERCEL) {
     try {
-      const skinsRestorerService = require('../services/skinsRestorerService');
-      const skinData = await skinsRestorerService.fetchPlayerSkin(linkRecord.minecraftUuid, linkRecord.minecraftUsername);
-      if (skinData && skinData.skinUrl && (skinData.skinUrl !== linkRecord.skinUrl || (skinData.textureHash && skinData.textureHash !== linkRecord.textureHash))) {
-        PlayerLinkService.updatePlayerSkin(user.id, skinData);
-        linkRecord = PlayerLinkService.getLinkStatus(user.id);
+      const minecraftLogBridge = require('../services/minecraftLogBridge');
+      if (minecraftLogBridge && minecraftLogBridge.sftp) {
+        const skinsRestorerService = require('../services/skinsRestorerService');
+        const skinData = await skinsRestorerService.fetchPlayerSkin(linkRecord.minecraftUuid, linkRecord.minecraftUsername);
+        if (skinData && skinData.skinUrl && (skinData.skinUrl !== linkRecord.skinUrl || (skinData.textureHash && skinData.textureHash !== linkRecord.textureHash))) {
+          PlayerLinkService.updatePlayerSkinByUsername(linkRecord.minecraftUsername, skinData);
+          linkRecord = PlayerLinkService.getLinkStatus(user.id);
+        }
       }
     } catch (err) {}
   }
@@ -439,25 +442,32 @@ router.all('/link/refresh-skin', async (req, res) => {
     return res.status(401).json({ error: 'Please log in with Discord first' });
   }
 
-  const link = PlayerLinkService.getLinkStatus(user.id);
+  // Pull latest from Firebase RTDB instantly (with cache-busting)
+  let link = await PlayerLinkService.fetchPlayerFromFirebase(user.id);
+  if (!link) {
+    link = await PlayerLinkService.getLinkStatusAsync(user.id, user.username);
+  }
   if (!link) {
     return res.status(404).json({ error: 'No linked Minecraft account found' });
   }
 
   try {
-    const SkinsRestorerService = require('../services/skinsRestorerService');
-    SkinsRestorerService.invalidateCache(link.minecraftUuid);
-    const skinData = await SkinsRestorerService.fetchPlayerSkin(link.minecraftUuid, link.minecraftUsername);
-    if (skinData && skinData.skinUrl) {
-      PlayerLinkService.updatePlayerSkin(user.id, skinData);
-      const updated = PlayerLinkService.getLinkStatus(user.id);
-      return res.json({ success: true, updated: true, player: updated });
+    const minecraftLogBridge = require('../services/minecraftLogBridge');
+    if (minecraftLogBridge && minecraftLogBridge.sftp) {
+      const SkinsRestorerService = require('../services/skinsRestorerService');
+      SkinsRestorerService.invalidateCache(link.minecraftUuid);
+      const skinData = await SkinsRestorerService.fetchPlayerSkin(link.minecraftUuid, link.minecraftUsername);
+      if (skinData && skinData.skinUrl) {
+        PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, skinData);
+        const updated = PlayerLinkService.getLinkStatus(user.id) || link;
+        return res.json({ success: true, updated: true, player: updated });
+      }
     }
   } catch (err) {
     console.warn('[authApi] Error refreshing skin:', err.message);
   }
 
-  return res.json({ success: true, updated: false, player: link });
+  return res.json({ success: true, updated: true, player: link });
 });
 
 // GET /api/auth/link/events (Server-Sent Events)

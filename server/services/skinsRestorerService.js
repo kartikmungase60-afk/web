@@ -21,7 +21,10 @@ const SKIN_PRESETS = {
   'wumpus': { id: 'sr-recommendation-discord-wumpus', type: 'CUSTOM', hash: '6c84d1a9095a63f47546720fe7f6edf03e12276e062b853e207a5c697f1e521', name: 'Discord Wumpus 👾' },
   'sr-recommendation-smily-face': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' },
   'smily-face': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' },
-  'smiley': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' }
+  'smiley': { id: 'sr-recommendation-smily-face', type: 'CUSTOM', hash: 'ca93f6fc40488f1877cda94a830b54e9f6f54ab58a5453bad5c947726dd1f473', name: 'Smiley Face 😊' },
+  'sr-recommendation-mc-steve': { id: 'sr-recommendation-mc-steve', type: 'CUSTOM', hash: 'cd17f453c69e60760f0ab8427b03fea723e8662a7f775433c16d100d610219fa', name: 'Steve 🧔' },
+  'mc-steve': { id: 'sr-recommendation-mc-steve', type: 'CUSTOM', hash: 'cd17f453c69e60760f0ab8427b03fea723e8662a7f775433c16d100d610219fa', name: 'Steve 🧔' },
+  'steve': { id: 'sr-recommendation-mc-steve', type: 'CUSTOM', hash: 'cd17f453c69e60760f0ab8427b03fea723e8662a7f775433c16d100d610219fa', name: 'Steve 🧔' }
 };
 
 class SkinsRestorerService {
@@ -72,17 +75,17 @@ class SkinsRestorerService {
           const userFilePath = `plugins/SkinsRestorer/players/${minecraftUsername}.player`;
           sftp.readFile(userFilePath, (err2, data2) => {
             if (err2 || !data2) return resolve(null);
-            this.parsePlayerData(sftp, data2).then(resolve);
+            this.parsePlayerData(sftp, data2, minecraftUsername).then(resolve);
           });
           return;
         }
 
-        this.parsePlayerData(sftp, data).then(resolve);
+        this.parsePlayerData(sftp, data, minecraftUsername).then(resolve);
       });
     });
   }
 
-  parsePlayerData(sftp, buffer) {
+  parsePlayerData(sftp, buffer, minecraftUsername = 'Steve') {
     return new Promise((resolve) => {
       try {
         const json = JSON.parse(buffer.toString('utf8'));
@@ -107,11 +110,14 @@ class SkinsRestorerService {
           const skinFilePath = `plugins/SkinsRestorer/skins/${identifier}.customskin`;
           sftp.readFile(skinFilePath, (err, skinData) => {
             if (err || !skinData) {
+              const fallbackHash = (identifier && identifier.includes('steve')) ? 'cd17f453c69e60760f0ab8427b03fea723e8662a7f775433c16d100d610219fa' : null;
+              const target = fallbackHash || (identifier && !identifier.startsWith('sr-') ? encodeURIComponent(identifier) : encodeURIComponent(minecraftUsername || 'Steve'));
               return resolve({
                 skinName: identifier,
                 skinSource: `SkinsRestorer Custom (${identifier})`,
-                skinUrl: `https://mc-heads.net/body/${encodeURIComponent(identifier)}/right`,
-                avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(identifier)}/128`
+                textureHash: fallbackHash || null,
+                skinUrl: `https://mc-heads.net/body/${target}/right`,
+                avatarUrl: `https://mc-heads.net/avatar/${target}/128`
               });
             }
 
@@ -129,11 +135,14 @@ class SkinsRestorerService {
               }
             } catch (e) {}
 
+            const fallbackHash = (identifier && identifier.includes('steve')) ? 'cd17f453c69e60760f0ab8427b03fea723e8662a7f775433c16d100d610219fa' : null;
+            const target = fallbackHash || (identifier && !identifier.startsWith('sr-') ? encodeURIComponent(identifier) : encodeURIComponent(minecraftUsername || 'Steve'));
             resolve({
               skinName: identifier,
               skinSource: `SkinsRestorer Custom (${identifier})`,
-              skinUrl: `https://mc-heads.net/body/${encodeURIComponent(identifier)}/right`,
-              avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(identifier)}/128`
+              textureHash: fallbackHash || null,
+              skinUrl: `https://mc-heads.net/body/${target}/right`,
+              avatarUrl: `https://mc-heads.net/avatar/${target}/128`
             });
           });
         } else if (type === 'PLAYER') {
@@ -212,40 +221,65 @@ class SkinsRestorerService {
       }
     } catch (e) {}
 
+    // In serverless environments (Vercel) or when there is no active SFTP bridge session:
+    // Raw SSH port 2022 cannot be established on Vercel and causes a 5.5s timeout hang!
+    // The background bridge daemon already syncs skins every second to Firebase RTDB.
+    // Return immediately to guarantee sub-100ms response times!
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || !process.env.SFTP_PASSWORD) {
+      return cached ? cached.data : null;
+    }
+
+    // Fast fallback with 600ms timeout max
     return new Promise((resolve) => {
+      let resolved = false;
       const conn = new Client();
       const timer = setTimeout(() => {
-        try { conn.end(); } catch (e) {}
-        resolve(cached ? cached.data : null);
-      }, 5000);
+        if (!resolved) {
+          resolved = true;
+          try { conn.destroy(); } catch (e) {}
+          resolve(cached ? cached.data : null);
+        }
+      }, 600);
 
       conn.on('ready', () => {
         conn.sftp(async (err, sftp) => {
           if (err) {
-            clearTimeout(timer);
-            try { conn.end(); } catch (e) {}
-            return resolve(cached ? cached.data : null);
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timer);
+              try { conn.destroy(); } catch (e) {}
+              return resolve(cached ? cached.data : null);
+            }
           }
           const res = await this.resolveSkinWithSftp(sftp, playerUuid, minecraftUsername);
-          clearTimeout(timer);
-          try { conn.end(); } catch (e) {}
-          if (res) {
-            this.skinCache.set(playerUuid, { data: res, timestamp: Date.now() });
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timer);
+            try { conn.destroy(); } catch (e) {}
+            if (res) {
+              this.skinCache.set(playerUuid, { data: res, timestamp: Date.now() });
+            }
+            resolve(res);
           }
-          resolve(res);
         });
       });
 
       conn.on('error', () => {
-        clearTimeout(timer);
-        resolve(cached ? cached.data : null);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          resolve(cached ? cached.data : null);
+        }
       });
 
       try {
         conn.connect(this.config);
-      } catch (e) {
-        clearTimeout(timer);
-        resolve(cached ? cached.data : null);
+      } catch (err) {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          resolve(cached ? cached.data : null);
+        }
       }
     });
   }

@@ -46,7 +46,7 @@ async function fetchFromFirebase() {
   if (!firebaseUrl) return false;
   try {
     const cleanUrl = firebaseUrl.replace(/\/$/, '');
-    const res = await fetch(`${cleanUrl}/linked_players.json`);
+    const res = await fetch(`${cleanUrl}/linked_players.json?t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object') {
@@ -77,7 +77,7 @@ async function fetchPlayerFromFirebase(discordId) {
   if (!firebaseUrl || !discordId) return null;
   try {
     const cleanUrl = firebaseUrl.replace(/\/$/, '');
-    const res = await fetch(`${cleanUrl}/linked_players/${discordId}.json`);
+    const res = await fetch(`${cleanUrl}/linked_players/${discordId}.json?t=${Date.now()}`);
     if (res.ok) {
       const item = await res.json();
       if (item && item.minecraftUsername) {
@@ -533,6 +533,16 @@ class PlayerLinkService {
     return Array.from(linkedPlayers.values());
   }
 
+  // Direct static access to fetch single player from Firebase
+  static async fetchPlayerFromFirebase(discordId) {
+    return await fetchPlayerFromFirebase(discordId);
+  }
+
+  // Direct static access to fetch all players from Firebase
+  static async fetchAllFromFirebase() {
+    return await fetchFromFirebase();
+  }
+
   // Ensure data is loaded from Firebase if empty (async helper for serverless/cold starts)
   static async ensureLoaded() {
     loadLinks();
@@ -552,11 +562,73 @@ class PlayerLinkService {
     return link;
   }
 
+  // Update skin for all linked records that share a Minecraft username
+  static updatePlayerSkinByUsername(minecraftUsername, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
+    if (!minecraftUsername) return false;
+    loadLinks();
+    let anyChanged = false;
+    const lowerName = minecraftUsername.toLowerCase();
+
+    for (const [id, link] of linkedPlayers.entries()) {
+      if (link && link.minecraftUsername && link.minecraftUsername.toLowerCase() === lowerName) {
+        let changed = false;
+        if (skinUrl && link.skinUrl !== skinUrl) {
+          link.skinUrl = skinUrl;
+          changed = true;
+        }
+        if (avatarUrl && link.avatarUrl !== avatarUrl) {
+          link.avatarUrl = avatarUrl;
+          changed = true;
+        }
+        if (skinName !== undefined && link.skinName !== skinName) {
+          link.skinName = skinName;
+          changed = true;
+        }
+        if (skinSource !== undefined && link.skinSource !== skinSource) {
+          link.skinSource = skinSource;
+          changed = true;
+        }
+        if (textureHash !== undefined && link.textureHash !== textureHash) {
+          link.textureHash = textureHash;
+          changed = true;
+        }
+        if (skinModel !== undefined && link.skinModel !== skinModel) {
+          link.skinModel = skinModel;
+          changed = true;
+        }
+
+        if (changed) {
+          anyChanged = true;
+          link.lastSkinUpdate = new Date().toISOString();
+          link.linkToken = generateLinkToken(link);
+          linkedPlayers.set(id, link);
+          syncToFirebase(link);
+
+          PlayerLinkService.notifySse(id, {
+            event: 'skin_updated',
+            player: link
+          });
+          console.log(`[PlayerLinkService] Dynamic skin updated for @${link.discordUsername} (${link.minecraftUsername}): ${skinUrl} (Synced to Firebase)`);
+        }
+      }
+    }
+
+    if (anyChanged) {
+      saveLinks();
+    }
+    return anyChanged;
+  }
+
   // Update skin for a player dynamically
   static updatePlayerSkin(discordId, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
     loadLinks();
     const link = linkedPlayers.get(discordId);
     if (!link) return false;
+
+    // Keep all linked accounts with the same Minecraft username in sync
+    if (link.minecraftUsername) {
+      return PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel });
+    }
 
     let changed = false;
     if (skinUrl && link.skinUrl !== skinUrl) {

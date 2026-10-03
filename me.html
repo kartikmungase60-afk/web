@@ -931,9 +931,9 @@
         },
 
         startPolling() {
-          clearInterval(this.pollTimer);
-          // Poll every 1 second to guarantee instant update on /link and dynamic skin changes for all players
-          this.pollTimer = setInterval(async () => {
+          if (this.pollTimer) clearTimeout(this.pollTimer);
+          // Poll every 1 second adaptively with non-overlapping requests for instant dynamic skin sync
+          const pollStatus = async () => {
             if (!this.authenticated || !this.user) return;
             try {
               const api = getApiBase();
@@ -961,9 +961,14 @@
                   const oldSkin = this.linkedPlayer ? this.linkedPlayer.skinUrl : '';
                   const oldHash = this.linkedPlayer ? this.linkedPlayer.textureHash : '';
                   const oldUpdate = this.linkedPlayer ? this.linkedPlayer.lastSkinUpdate : '';
+                  const skinChanged = (oldSkin && data.linkedPlayer.skinUrl && oldSkin !== data.linkedPlayer.skinUrl) ||
+                                     (oldHash && data.linkedPlayer.textureHash && oldHash !== data.linkedPlayer.textureHash) ||
+                                     (oldUpdate && data.linkedPlayer.lastSkinUpdate && oldUpdate !== data.linkedPlayer.lastSkinUpdate);
+
                   this.isLinked = true;
-                  this.linkedPlayer = data.linkedPlayer;
-                  localStorage.setItem('battlepie_linked_player', JSON.stringify(data.linkedPlayer));
+                  const tick = skinChanged ? Date.now() : ((this.linkedPlayer && this.linkedPlayer._renderTick) || Date.now());
+                  this.linkedPlayer = Object.assign({}, data.linkedPlayer, { _renderTick: tick });
+                  localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                   if (data.linkToken || data.linkedPlayer.linkToken) {
                     localStorage.setItem('battlepie_link_token', data.linkToken || data.linkedPlayer.linkToken);
                   }
@@ -971,9 +976,7 @@
                   if (wasNotLinked) {
                     clearInterval(this.timer);
                     if (window.zlToast) window.zlToast(`Linked to ${data.linkedPlayer.minecraftUsername}!`);
-                  } else if ((oldSkin && data.linkedPlayer.skinUrl && oldSkin !== data.linkedPlayer.skinUrl) ||
-                             (oldHash && data.linkedPlayer.textureHash && oldHash !== data.linkedPlayer.textureHash) ||
-                             (oldUpdate && data.linkedPlayer.lastSkinUpdate && oldUpdate !== data.linkedPlayer.lastSkinUpdate)) {
+                  } else if (skinChanged) {
                     if (window.zlToast) window.zlToast('Player skin updated from in-game server!');
                   }
                 } else if (!data.isLinked && this.isLinked) {
@@ -986,13 +989,23 @@
                 }
               }
             } catch (e) {}
-          }, 1000);
+            if (this.authenticated && this.user) {
+              this.pollTimer = setTimeout(pollStatus, 1000);
+            }
+          };
+
+          this.pollTimer = setTimeout(pollStatus, 1000);
         },
 
         getSkinUrl(p) {
           if (!p) return '';
-          const base = p.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(p.minecraftUsername) + '/right');
-          const v = (p.textureHash ? p.textureHash.substring(0, 10) + '_' : '') + (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
+          let base = p.skinUrl;
+          if (p.textureHash) {
+            base = 'https://mc-heads.net/body/' + p.textureHash + '/right';
+          } else if (!base || base.includes('sr-recommendation')) {
+            base = 'https://mc-heads.net/body/' + encodeURIComponent(p.minecraftUsername || 'Steve') + '/right';
+          }
+          const v = (p.textureHash ? p.textureHash.substring(0, 10) + '_' : '') + (p._renderTick || (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now()));
           return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
         },
 
@@ -1014,8 +1027,8 @@
             if (res.ok) {
               const data = await res.json();
               if (data.player) {
-                this.linkedPlayer = data.player;
-                localStorage.setItem('battlepie_linked_player', JSON.stringify(data.player));
+                this.linkedPlayer = Object.assign({}, data.player, { _renderTick: Date.now() });
+                localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                 if (data.player.linkToken) {
                   localStorage.setItem('battlepie_link_token', data.player.linkToken);
                 }

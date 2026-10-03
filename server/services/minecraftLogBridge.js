@@ -265,7 +265,11 @@ class MinecraftLogBridge {
     if (!this.sftp) return;
 
     try {
-      const link = PlayerLinkService.getLinkByUsername(playerUsername);
+      let link = PlayerLinkService.getLinkByUsername(playerUsername);
+      if (!link) {
+        await PlayerLinkService.fetchAllFromFirebase();
+        link = PlayerLinkService.getLinkByUsername(playerUsername);
+      }
       if (!link) return;
 
       const uuid = playerUuid || link.minecraftUuid;
@@ -273,7 +277,7 @@ class MinecraftLogBridge {
       const skinData = await SkinsRestorerService.resolveSkinWithSftp(this.sftp, uuid, playerUsername);
 
       if (skinData && skinData.skinUrl) {
-        PlayerLinkService.updatePlayerSkin(link.discordId, skinData);
+        PlayerLinkService.updatePlayerSkinByUsername(playerUsername, skinData);
       }
     } catch (err) {
       console.warn(`[MinecraftLogBridge] Failed syncing skin for ${playerUsername}:`, err.message);
@@ -286,11 +290,25 @@ class MinecraftLogBridge {
     this.isSyncingSkins = true;
 
     try {
+      // Periodically refresh links from Firebase so any accounts linked via web are tracked
+      if (Date.now() - this.lastSkinSyncTime > 10000) {
+        this.lastSkinSyncTime = Date.now();
+        await PlayerLinkService.fetchAllFromFirebase();
+      }
+
       const links = PlayerLinkService.getAllLinks();
       if (!links || links.length === 0) return;
 
-      await Promise.all(links.map(async (link) => {
-        if (!link || !link.minecraftUsername) return;
+      const seen = new Set();
+      const uniquePlayers = [];
+      for (const l of links) {
+        if (l && l.minecraftUsername && !seen.has(l.minecraftUsername.toLowerCase())) {
+          seen.add(l.minecraftUsername.toLowerCase());
+          uniquePlayers.push(l);
+        }
+      }
+
+      await Promise.all(uniquePlayers.map(async (link) => {
         try {
           const skinData = await SkinsRestorerService.resolveSkinWithSftp(
             this.sftp,
@@ -298,7 +316,7 @@ class MinecraftLogBridge {
             link.minecraftUsername
           );
           if (skinData && skinData.skinUrl) {
-            PlayerLinkService.updatePlayerSkin(link.discordId, skinData);
+            PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, skinData);
           }
         } catch (e) {}
       }));
