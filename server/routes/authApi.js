@@ -358,7 +358,7 @@ router.all('/link/status', async (req, res) => {
         const skinsRestorerService = require('../services/skinsRestorerService');
         const skinData = await skinsRestorerService.fetchPlayerSkin(linkRecord.minecraftUuid, linkRecord.minecraftUsername);
         if (skinData && skinData.skinUrl && (skinData.skinUrl !== linkRecord.skinUrl || (skinData.textureHash && skinData.textureHash !== linkRecord.textureHash))) {
-          PlayerLinkService.updatePlayerSkinByUsername(linkRecord.minecraftUsername, skinData);
+          await PlayerLinkService.updatePlayerSkinByUsername(linkRecord.minecraftUsername, skinData);
           linkRecord = PlayerLinkService.getLinkStatus(user.id);
         }
       }
@@ -458,7 +458,7 @@ router.all('/link/refresh-skin', async (req, res) => {
       SkinsRestorerService.invalidateCache(link.minecraftUuid);
       const skinData = await SkinsRestorerService.fetchPlayerSkin(link.minecraftUuid, link.minecraftUsername);
       if (skinData && skinData.skinUrl) {
-        PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, skinData);
+        await PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, skinData);
         const updated = PlayerLinkService.getLinkStatus(user.id) || link;
         return res.json({ success: true, updated: true, player: updated });
       }
@@ -558,6 +558,38 @@ router.all('/link/unlink', async (req, res) => {
   }
   const success = await PlayerLinkService.unlink(targetId);
   res.json({ success, message: 'Minecraft account successfully unlinked' });
+});
+
+// GET & POST /api/auth/link/pending-unlinks (Polled by Minecraft server plugin)
+router.all('/link/pending-unlinks', async (req, res) => {
+  const pending = await PlayerLinkService.getPendingUnlinks();
+  res.json({ success: true, pending });
+});
+
+// POST /api/auth/link/ack-unlink (Acknowledged by Minecraft server plugin after handling player)
+router.post('/link/ack-unlink', async (req, res) => {
+  const { player, serverSecret } = req.body;
+  if (config.serverSecret && (!serverSecret || serverSecret !== config.serverSecret)) {
+    return res.status(403).json({ success: false, error: 'Unauthorized Minecraft server secret' });
+  }
+  if (!player) {
+    return res.status(400).json({ success: false, error: 'Missing player name' });
+  }
+  const success = await PlayerLinkService.acknowledgeUnlink(player);
+  res.json({ success });
+});
+
+// POST /api/auth/link/unlink-ingame (Allows in-game command /link unlink to unlink Discord connection)
+router.post('/link/unlink-ingame', async (req, res) => {
+  const { player, serverSecret } = req.body;
+  if (config.serverSecret && (!serverSecret || serverSecret !== config.serverSecret)) {
+    return res.status(403).json({ success: false, error: 'Unauthorized Minecraft server secret' });
+  }
+  if (!player) {
+    return res.status(400).json({ success: false, error: 'Missing player name' });
+  }
+  const success = await PlayerLinkService.unlinkByMinecraftUsername(player);
+  res.json({ success, message: `Account for ${player} successfully unlinked.` });
 });
 
 // POST & GET /api/auth/link/resetall (Full testing reset endpoint)

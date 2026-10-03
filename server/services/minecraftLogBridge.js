@@ -265,19 +265,20 @@ class MinecraftLogBridge {
     if (!this.sftp) return;
 
     try {
-      let link = PlayerLinkService.getLinkByUsername(playerUsername);
+      // 🔒 CRITICAL: ALWAYS refresh from Firebase RTDB first so we know if unlinked on website!
+      await PlayerLinkService.fetchAllFromFirebase();
+      const link = PlayerLinkService.getLinkByUsername(playerUsername);
       if (!link) {
-        await PlayerLinkService.fetchAllFromFirebase();
-        link = PlayerLinkService.getLinkByUsername(playerUsername);
+        console.log(`[MinecraftLogBridge] Player ${playerUsername} is not linked. Ignoring in-game skin change.`);
+        return;
       }
-      if (!link) return;
 
       const uuid = playerUuid || link.minecraftUuid;
       SkinsRestorerService.invalidateCache(uuid);
       const skinData = await SkinsRestorerService.resolveSkinWithSftp(this.sftp, uuid, playerUsername);
 
       if (skinData && skinData.skinUrl) {
-        PlayerLinkService.updatePlayerSkinByUsername(playerUsername, skinData);
+        await PlayerLinkService.updatePlayerSkinByUsername(playerUsername, skinData);
       }
     } catch (err) {
       console.warn(`[MinecraftLogBridge] Failed syncing skin for ${playerUsername}:`, err.message);
@@ -290,8 +291,8 @@ class MinecraftLogBridge {
     this.isSyncingSkins = true;
 
     try {
-      // Periodically refresh links from Firebase so any accounts linked via web are tracked
-      if (Date.now() - this.lastSkinSyncTime > 10000) {
+      // Refresh links from Firebase every 5 seconds so any accounts unlinked via web are immediately purged
+      if (Date.now() - this.lastSkinSyncTime > 5000) {
         this.lastSkinSyncTime = Date.now();
         await PlayerLinkService.fetchAllFromFirebase();
       }
@@ -316,7 +317,7 @@ class MinecraftLogBridge {
             link.minecraftUsername
           );
           if (skinData && skinData.skinUrl) {
-            PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, skinData);
+            await PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, skinData);
           }
         } catch (e) {}
       }));

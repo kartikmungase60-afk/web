@@ -236,7 +236,7 @@ router.post('/skin/set', async (req, res) => {
       console.warn('[featuresApi] Could not write skin to SFTP:', e.message);
     }
 
-    PlayerLinkService.updatePlayerSkin(link.discordId, {
+    await PlayerLinkService.updatePlayerSkin(link.discordId, {
       skinName: finalSkinName,
       skinUrl,
       avatarUrl,
@@ -285,7 +285,7 @@ router.post('/skin/upload', async (req, res) => {
       const cleanSkin = skinName.trim();
       publicSkinUrl = `https://mc-heads.net/body/${encodeURIComponent(cleanSkin)}/right`;
       publicAvatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(cleanSkin)}/128`;
-      PlayerLinkService.updatePlayerSkin(link.discordId, {
+      await PlayerLinkService.updatePlayerSkin(link.discordId, {
         skinName: cleanSkin,
         skinUrl: publicSkinUrl,
         avatarUrl: publicAvatarUrl,
@@ -310,7 +310,7 @@ router.post('/skin/upload', async (req, res) => {
       publicSkinUrl = `https://mc-heads.net/body/${encodeURIComponent(username)}/right`;
       publicAvatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(username)}/128`;
 
-      PlayerLinkService.updatePlayerSkin(link.discordId, {
+      await PlayerLinkService.updatePlayerSkin(link.discordId, {
         skinUrl: publicSkinUrl,
         avatarUrl: publicAvatarUrl,
         skinSource: 'Custom Upload'
@@ -348,7 +348,7 @@ router.post('/skin/reset', async (req, res) => {
     if (link) {
       const defaultSkinUrl = `https://mc-heads.net/body/Steve/right`;
       const defaultAvatarUrl = `https://mc-heads.net/avatar/Steve/128`;
-      PlayerLinkService.updatePlayerSkin(link.discordId, {
+      await PlayerLinkService.updatePlayerSkin(link.discordId, {
         skinName: null,
         skinUrl: defaultSkinUrl,
         avatarUrl: defaultAvatarUrl,

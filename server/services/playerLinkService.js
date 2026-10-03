@@ -472,6 +472,17 @@ class PlayerLinkService {
     saveLinks();
     syncToFirebase(linkRecord);
 
+    // Clean up any unlinked or pending unlink records from Firebase RTDB
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+    if (firebaseUrl) {
+      try {
+        const cleanUrl = firebaseUrl.replace(/\/$/, '');
+        const lowerName = encodeURIComponent(cleanUsername.toLowerCase());
+        fetch(`${cleanUrl}/unlinked_players/${lowerName}.json`, { method: 'DELETE' }).catch(() => {});
+        fetch(`${cleanUrl}/pending_unlinks/${lowerName}.json`, { method: 'DELETE' }).catch(() => {});
+      } catch (e) {}
+    }
+
     // Invalidate all active codes for this user upon successful link
     for (const [c, item] of activeCodes.entries()) {
       if (item.discordId === codeEntry.discordId) {
@@ -554,6 +565,13 @@ class PlayerLinkService {
           return null;
         }
 
+        // 🔒 If Firebase is configured and user is not in linkedPlayers, do NOT rehydrate!
+        // This strictly prevents resurrecting accounts unlinked via the website
+        const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+        if (firebaseUrl && !linkedPlayers.has(verified.discordId)) {
+          return null;
+        }
+
         const restored = {
           discordId: verified.discordId,
           discordUsername: verified.discordUsername,
@@ -627,24 +645,57 @@ class PlayerLinkService {
   // Async getLinkStatus ensuring Firebase sync
   static async getLinkStatusAsync(discordId, discordUsername, linkToken, cachedPlayer) {
     let cloudFound = false;
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
     if (discordId) {
       const fbItem = await fetchPlayerFromFirebase(discordId);
       if (fbItem) cloudFound = true;
     } else {
       await PlayerLinkService.ensureLoaded();
     }
-    // Only pass linkToken if user exists in cloud or cloud DB is not configured (prevents resurrecting unlinked players)
-    const effectiveToken = (cloudFound || !process.env.FIREBASE_DATABASE_URL) ? linkToken : null;
-    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, effectiveToken, cachedPlayer);
+    // Only pass linkToken and cachedPlayer if user exists in cloud or cloud DB is not configured (prevents resurrecting unlinked players)
+    const effectiveToken = (cloudFound || !firebaseUrl) ? linkToken : null;
+    const effectiveCached = (cloudFound || !firebaseUrl) ? cachedPlayer : null;
+    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, effectiveToken, effectiveCached);
     return link;
   }
 
   // Update skin for all linked records that share a Minecraft username
-  static updatePlayerSkinByUsername(minecraftUsername, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
+  static async updatePlayerSkinByUsername(minecraftUsername, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
     if (!minecraftUsername) return false;
+    
+    // 🔒 Refresh from Firebase RTDB first so we have the absolute newest cluster state
+    await PlayerLinkService.fetchAllFromFirebase();
+    
+    const lowerName = minecraftUsername.toLowerCase();
+    const discordId = mcToDiscord.get(lowerName);
+    
+    // 🔒 If not linked in Firebase, or unlinked, DO NOT UPDATE and DO NOT SYNC!
+    if (!discordId || !linkedPlayers.has(discordId)) {
+      console.log(`[PlayerLinkService] Player "${minecraftUsername}" is NOT currently linked in Firebase RTDB. Ignoring skin update.`);
+      return false;
+    }
+
+    // 🔒 Check unlinked_players registry in Firebase RTDB
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+    if (firebaseUrl) {
+      try {
+        const cleanUrl = firebaseUrl.replace(/\/$/, '');
+        const unlinkedRes = await fetch(`${cleanUrl}/unlinked_players/${encodeURIComponent(lowerName)}.json?t=${Date.now()}`);
+        if (unlinkedRes.ok) {
+          const unlinkedData = await unlinkedRes.json();
+          if (unlinkedData) {
+            console.log(`[PlayerLinkService] Player "${minecraftUsername}" was explicitly unlinked on website. Blocking skin sync.`);
+            linkedPlayers.delete(discordId);
+            mcToDiscord.delete(lowerName);
+            saveLinks();
+            return false;
+          }
+        }
+      } catch (e) {}
+    }
+
     loadLinks();
     let anyChanged = false;
-    const lowerName = minecraftUsername.toLowerCase();
 
     for (const [id, link] of linkedPlayers.entries()) {
       if (link && link.minecraftUsername && link.minecraftUsername.toLowerCase() === lowerName) {
@@ -697,14 +748,14 @@ class PlayerLinkService {
   }
 
   // Update skin for a player dynamically
-  static updatePlayerSkin(discordId, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
+  static async updatePlayerSkin(discordId, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel }) {
     loadLinks();
     const link = linkedPlayers.get(discordId);
     if (!link) return false;
 
     // Keep all linked accounts with the same Minecraft username in sync
     if (link.minecraftUsername) {
-      return PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel });
+      return await PlayerLinkService.updatePlayerSkinByUsername(link.minecraftUsername, { skinUrl, avatarUrl, skinName, skinSource, textureHash, skinModel });
     }
 
     let changed = false;
@@ -758,13 +809,13 @@ class PlayerLinkService {
     // Ensure freshest state is loaded from Firebase
     await PlayerLinkService.ensureLoaded(true);
 
-    const unlinkedMinecraftUsernames = new Set();
+    const unlinkedMinecraftUsernames = new Map(); // lower -> original casing
 
     // 1. Find in linkedPlayers by ID
     if (linkedPlayers.has(strId)) {
       const rec = linkedPlayers.get(strId);
       if (rec && rec.minecraftUsername) {
-        unlinkedMinecraftUsernames.add(rec.minecraftUsername.toLowerCase());
+        unlinkedMinecraftUsernames.set(rec.minecraftUsername.toLowerCase(), rec.minecraftUsername);
       }
       linkedPlayers.delete(strId);
     }
@@ -773,18 +824,18 @@ class PlayerLinkService {
     for (const [id, item] of linkedPlayers.entries()) {
       if (String(id) === strId || (item.discordUsername && item.discordUsername.toLowerCase() === strId.toLowerCase())) {
         if (item.minecraftUsername) {
-          unlinkedMinecraftUsernames.add(item.minecraftUsername.toLowerCase());
+          unlinkedMinecraftUsernames.set(item.minecraftUsername.toLowerCase(), item.minecraftUsername);
         }
         linkedPlayers.delete(id);
       }
     }
 
     // 3. Remove all unlinked Minecraft usernames from mcToDiscord
-    for (const lowerName of unlinkedMinecraftUsernames) {
+    for (const [lowerName, originalName] of unlinkedMinecraftUsernames.entries()) {
       if (mcToDiscord.get(lowerName) === strId || !linkedPlayers.has(mcToDiscord.get(lowerName))) {
         mcToDiscord.delete(lowerName);
       }
-      console.log(`[PlayerLinkService] Unlinked Minecraft account "${lowerName}" from Discord ${strId}`);
+      console.log(`[PlayerLinkService] Unlinked Minecraft account "${originalName}" from Discord ${strId}`);
     }
 
     saveLinks();
@@ -792,18 +843,81 @@ class PlayerLinkService {
     // Notify connected SSE browser clients for this user
     PlayerLinkService.notifySse(strId, { event: 'unlinked' });
 
-    // Delete from Firebase RTDB
+    // Sync deletion and create unlinked & pending records in Firebase RTDB
     const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
     if (firebaseUrl) {
       try {
         const cleanUrl = firebaseUrl.replace(/\/$/, '');
         await fetch(`${cleanUrl}/linked_players/${strId}.json`, { method: 'DELETE' });
         console.log(`[Firebase] Deleted linked_players/${strId}.json from Firebase RTDB`);
+
+        for (const [lowerName, originalName] of unlinkedMinecraftUsernames.entries()) {
+          // Record in unlinked_players so future skin updates or stale tokens never revive it
+          await fetch(`${cleanUrl}/unlinked_players/${encodeURIComponent(lowerName)}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              minecraftUsername: originalName,
+              discordId: strId,
+              unlinkedAt: Date.now()
+            })
+          });
+
+          // Queue in pending_unlinks for Minecraft in-game kick / chat message handler
+          await fetch(`${cleanUrl}/pending_unlinks/${encodeURIComponent(lowerName)}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              player: originalName,
+              discordId: strId,
+              timestamp: Date.now()
+            })
+          });
+          console.log(`[Firebase] Created pending_unlinks/${lowerName}.json for in-game kick/message notification.`);
+        }
       } catch (err) {
         console.warn('[Firebase Delete Error]', err.message);
       }
     }
     return true;
+  }
+
+  // Fetch pending unlinks from Firebase RTDB
+  static async getPendingUnlinks() {
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+    if (!firebaseUrl) return [];
+    try {
+      const cleanUrl = firebaseUrl.replace(/\/$/, '');
+      const res = await fetch(`${cleanUrl}/pending_unlinks.json?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          return Object.values(data).filter(item => item && item.player);
+        }
+      }
+    } catch (e) {
+      console.warn('[PlayerLinkService] Error getting pending unlinks:', e.message);
+    }
+    return [];
+  }
+
+  // Acknowledge a pending unlink (in-game plugin finished processing)
+  static async acknowledgeUnlink(playerName) {
+    if (!playerName) return false;
+    const lowerName = playerName.trim().toLowerCase();
+    const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
+    if (!firebaseUrl) return false;
+    try {
+      const cleanUrl = firebaseUrl.replace(/\/$/, '');
+      await fetch(`${cleanUrl}/pending_unlinks/${encodeURIComponent(lowerName)}.json`, {
+        method: 'DELETE'
+      });
+      console.log(`[Firebase] Acknowledged and removed pending_unlinks/${lowerName}.json`);
+      return true;
+    } catch (e) {
+      console.warn('[PlayerLinkService] Error acknowledging unlink:', e.message);
+      return false;
+    }
   }
 
   // Unlink by Minecraft username (helper for admin actions)

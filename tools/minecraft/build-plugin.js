@@ -60,6 +60,7 @@ execSync(`jar -cvf "${outJar}" -C "${buildDir}" .`, { stdio: 'pipe' });
 // Copy to local server plugins directory
 fs.mkdirSync(path.dirname(serverPluginJar), { recursive: true });
 fs.copyFileSync(outJar, serverPluginJar);
+fs.copyFileSync(outJar, path.join(rootDir, 'tools/minecraft/MineOrangeLink.jar'));
 
 const stat = fs.statSync(serverPluginJar);
 console.log(`[Build] SUCCESS! BattlepieLink.jar built successfully (${stat.size} bytes).`);

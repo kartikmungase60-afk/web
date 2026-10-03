@@ -38,7 +38,7 @@ command /link [<text>]:
 
         if arg-1 is "unlink":
             delete {mineorange::linked::%player's uuid%}
-            send "&8[&6&lMine Orange&8]&r &eIn-game link status reset. To re-link, visit &fhttps://mineorange.fun/me" to player
+            execute player command "mineorangelink:link unlink"
             stop
 
         if arg-1 is "resetall" or "clearall" or "wipe":
