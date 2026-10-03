@@ -41,6 +41,7 @@ async function syncToFirebase(record) {
 }
 
 // Fetch all from Firebase Realtime Database
+let lastFirebaseCount = -1;
 async function fetchFromFirebase() {
   const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
   if (!firebaseUrl) return false;
@@ -52,20 +53,30 @@ async function fetchFromFirebase() {
       linkedPlayers.clear();
       mcToDiscord.clear();
       if (data && typeof data === 'object') {
+        const unlinkedSub = (data.__unlinked__ && typeof data.__unlinked__ === 'object') ? data.__unlinked__ : {};
         let count = 0;
         for (const [id, item] of Object.entries(data)) {
+          if (id.startsWith('_')) continue;
           if (item && item.minecraftUsername) {
+            const lowerMc = item.minecraftUsername.toLowerCase();
+            if (unlinkedSub[lowerMc]) continue;
             linkedPlayers.set(id, item);
-            mcToDiscord.set(item.minecraftUsername.toLowerCase(), id);
+            mcToDiscord.set(lowerMc, id);
             count++;
           }
         }
         saveLinks();
-        console.log(`[Firebase] Successfully loaded ${count} linked players from Firebase RTDB.`);
+        if (lastFirebaseCount !== count) {
+          lastFirebaseCount = count;
+          console.log(`[Firebase] Successfully loaded ${count} linked players from Firebase RTDB.`);
+        }
         return true;
       } else {
         saveLinks();
-        console.log(`[Firebase] No linked players found in Firebase RTDB.`);
+        if (lastFirebaseCount !== 0) {
+          lastFirebaseCount = 0;
+          console.log(`[Firebase] No linked players found in Firebase RTDB.`);
+        }
         return true;
       }
     }
@@ -123,11 +134,6 @@ function loadLinks() {
     }
   } catch (err) {
     console.error('[PlayerLinkService] Error loading links file:', err.message);
-  }
-
-  // If memory is empty and Firebase is configured, fetch from Firebase
-  if (linkedPlayers.size === 0 && (process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl))) {
-    fetchFromFirebase().catch(() => {});
   }
 }
 
@@ -470,7 +476,7 @@ class PlayerLinkService {
     linkedPlayers.set(codeEntry.discordId, linkRecord);
     mcToDiscord.set(cleanUsername.toLowerCase(), codeEntry.discordId);
     saveLinks();
-    syncToFirebase(linkRecord);
+    await syncToFirebase(linkRecord);
 
     // Clean up any unlinked or pending unlink records from Firebase RTDB
     const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
@@ -478,8 +484,8 @@ class PlayerLinkService {
       try {
         const cleanUrl = firebaseUrl.replace(/\/$/, '');
         const lowerName = encodeURIComponent(cleanUsername.toLowerCase());
-        fetch(`${cleanUrl}/unlinked_players/${lowerName}.json`, { method: 'DELETE' }).catch(() => {});
-        fetch(`${cleanUrl}/pending_unlinks/${lowerName}.json`, { method: 'DELETE' }).catch(() => {});
+        await fetch(`${cleanUrl}/linked_players/__unlinked__/${lowerName}.json`, { method: 'DELETE' });
+        await fetch(`${cleanUrl}/linked_players/__pending__/${lowerName}.json`, { method: 'DELETE' });
       } catch (e) {}
     }
 
@@ -636,8 +642,12 @@ class PlayerLinkService {
 
   // Ensure data is loaded from Firebase (async helper for serverless/cold starts)
   static async ensureLoaded(forceRefresh = false) {
+    if (forceRefresh) {
+      await fetchFromFirebase();
+      return;
+    }
     loadLinks();
-    if (forceRefresh || linkedPlayers.size === 0) {
+    if (linkedPlayers.size === 0) {
       await fetchFromFirebase();
     }
   }
@@ -680,10 +690,10 @@ class PlayerLinkService {
     if (firebaseUrl) {
       try {
         const cleanUrl = firebaseUrl.replace(/\/$/, '');
-        const unlinkedRes = await fetch(`${cleanUrl}/unlinked_players/${encodeURIComponent(lowerName)}.json?t=${Date.now()}`);
+        const unlinkedRes = await fetch(`${cleanUrl}/linked_players/__unlinked__/${encodeURIComponent(lowerName)}.json?t=${Date.now()}`);
         if (unlinkedRes.ok) {
           const unlinkedData = await unlinkedRes.json();
-          if (unlinkedData) {
+          if (unlinkedData && unlinkedData.minecraftUsername) {
             console.log(`[PlayerLinkService] Player "${minecraftUsername}" was explicitly unlinked on website. Blocking skin sync.`);
             linkedPlayers.delete(discordId);
             mcToDiscord.delete(lowerName);
@@ -694,7 +704,6 @@ class PlayerLinkService {
       } catch (e) {}
     }
 
-    loadLinks();
     let anyChanged = false;
 
     for (const [id, link] of linkedPlayers.entries()) {
@@ -852,8 +861,8 @@ class PlayerLinkService {
         console.log(`[Firebase] Deleted linked_players/${strId}.json from Firebase RTDB`);
 
         for (const [lowerName, originalName] of unlinkedMinecraftUsernames.entries()) {
-          // Record in unlinked_players so future skin updates or stale tokens never revive it
-          await fetch(`${cleanUrl}/unlinked_players/${encodeURIComponent(lowerName)}.json`, {
+          // Record in __unlinked__ so future skin updates or stale tokens never revive it
+          await fetch(`${cleanUrl}/linked_players/__unlinked__/${encodeURIComponent(lowerName)}.json`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -863,8 +872,8 @@ class PlayerLinkService {
             })
           });
 
-          // Queue in pending_unlinks for Minecraft in-game kick / chat message handler
-          await fetch(`${cleanUrl}/pending_unlinks/${encodeURIComponent(lowerName)}.json`, {
+          // Queue in __pending__ for Minecraft in-game kick / chat message handler
+          await fetch(`${cleanUrl}/linked_players/__pending__/${encodeURIComponent(lowerName)}.json`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -873,7 +882,7 @@ class PlayerLinkService {
               timestamp: Date.now()
             })
           });
-          console.log(`[Firebase] Created pending_unlinks/${lowerName}.json for in-game kick/message notification.`);
+          console.log(`[Firebase] Created pending_unlinks for ${lowerName} (kick/message notification).`);
         }
       } catch (err) {
         console.warn('[Firebase Delete Error]', err.message);
@@ -888,7 +897,7 @@ class PlayerLinkService {
     if (!firebaseUrl) return [];
     try {
       const cleanUrl = firebaseUrl.replace(/\/$/, '');
-      const res = await fetch(`${cleanUrl}/pending_unlinks.json?t=${Date.now()}`);
+      const res = await fetch(`${cleanUrl}/linked_players/__pending__.json?t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         if (data && typeof data === 'object') {
@@ -909,10 +918,10 @@ class PlayerLinkService {
     if (!firebaseUrl) return false;
     try {
       const cleanUrl = firebaseUrl.replace(/\/$/, '');
-      await fetch(`${cleanUrl}/pending_unlinks/${encodeURIComponent(lowerName)}.json`, {
+      await fetch(`${cleanUrl}/linked_players/__pending__/${encodeURIComponent(lowerName)}.json`, {
         method: 'DELETE'
       });
-      console.log(`[Firebase] Acknowledged and removed pending_unlinks/${lowerName}.json`);
+      console.log(`[Firebase] Acknowledged and removed pending unlink for ${lowerName}`);
       return true;
     } catch (e) {
       console.warn('[PlayerLinkService] Error acknowledging unlink:', e.message);
