@@ -514,7 +514,13 @@ router.post('/link/ingame', async (req, res) => {
   });
 
   if (!result.success) {
-    return res.status(400).json(result);
+    return res.status(400).json({
+      success: false,
+      alreadyLinked: Boolean(result.alreadyLinked),
+      error: result.error,
+      minecraftChatResponse: `§8[§6Mine Orange§8] §c${result.error}`,
+      kickMessage: `§c§lLinking Error\n\n§7${result.error}\n§eVisit https://mineorange.fun/me`
+    });
   }
 
   res.json({
@@ -551,7 +557,7 @@ router.all('/link/unlink', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const success = await PlayerLinkService.unlink(targetId);
-  res.json({ success });
+  res.json({ success, message: 'Minecraft account successfully unlinked' });
 });
 
 // POST & GET /api/auth/link/resetall (Full testing reset endpoint)

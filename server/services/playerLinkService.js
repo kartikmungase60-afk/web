@@ -49,6 +49,8 @@ async function fetchFromFirebase() {
     const res = await fetch(`${cleanUrl}/linked_players.json?t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
+      linkedPlayers.clear();
+      mcToDiscord.clear();
       if (data && typeof data === 'object') {
         let count = 0;
         for (const [id, item] of Object.entries(data)) {
@@ -58,11 +60,13 @@ async function fetchFromFirebase() {
             count++;
           }
         }
-        if (count > 0) {
-          saveLinks();
-          console.log(`[Firebase] Successfully loaded ${count} linked players from Firebase RTDB.`);
-          return true;
-        }
+        saveLinks();
+        console.log(`[Firebase] Successfully loaded ${count} linked players from Firebase RTDB.`);
+        return true;
+      } else {
+        saveLinks();
+        console.log(`[Firebase] No linked players found in Firebase RTDB.`);
+        return true;
       }
     }
   } catch (err) {
@@ -75,16 +79,27 @@ async function fetchFromFirebase() {
 async function fetchPlayerFromFirebase(discordId) {
   const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
   if (!firebaseUrl || !discordId) return null;
+  const strId = String(discordId).trim();
   try {
     const cleanUrl = firebaseUrl.replace(/\/$/, '');
-    const res = await fetch(`${cleanUrl}/linked_players/${discordId}.json?t=${Date.now()}`);
+    const res = await fetch(`${cleanUrl}/linked_players/${strId}.json?t=${Date.now()}`);
     if (res.ok) {
       const item = await res.json();
       if (item && item.minecraftUsername) {
-        linkedPlayers.set(discordId, item);
-        mcToDiscord.set(item.minecraftUsername.toLowerCase(), discordId);
+        linkedPlayers.set(strId, item);
+        mcToDiscord.set(item.minecraftUsername.toLowerCase(), strId);
         saveLinks();
         return item;
+      } else {
+        // User is null/unlinked in Firebase: purge from local cache
+        if (linkedPlayers.has(strId)) {
+          const old = linkedPlayers.get(strId);
+          if (old && old.minecraftUsername) {
+            mcToDiscord.delete(old.minecraftUsername.toLowerCase());
+          }
+          linkedPlayers.delete(strId);
+          saveLinks();
+        }
       }
     }
   } catch (err) {
@@ -337,6 +352,56 @@ class PlayerLinkService {
       return { success: false, error: 'Code has expired. Please click "Generate new code" on the website.' };
     }
 
+    // 🔒 Refresh from Firebase to ensure freshest cluster state before verifying
+    await PlayerLinkService.ensureLoaded(true);
+
+    const lowerUsername = cleanUsername.toLowerCase();
+    const targetDiscordId = String(codeEntry.discordId);
+
+    // 1️⃣ STRICT 1-TO-1 CHECK: Is this Minecraft account ALREADY linked to another Discord account?
+    let existingAccount = null;
+    let existingDiscordId = null;
+
+    const mappedDiscordId = mcToDiscord.get(lowerUsername);
+    if (mappedDiscordId && String(mappedDiscordId) !== targetDiscordId) {
+      existingDiscordId = String(mappedDiscordId);
+      existingAccount = linkedPlayers.get(existingDiscordId);
+    }
+
+    if (!existingAccount) {
+      for (const [id, item] of linkedPlayers.entries()) {
+        if (String(id) !== targetDiscordId && item && item.minecraftUsername && item.minecraftUsername.toLowerCase() === lowerUsername) {
+          existingDiscordId = String(id);
+          existingAccount = item;
+          break;
+        }
+      }
+    }
+
+    if (existingAccount) {
+      const linkedUserTag = existingAccount.discordUsername || existingAccount.discordGlobalName || existingDiscordId;
+      console.warn(`[PlayerLinkService] Blocked duplicate link attempt: Minecraft "${cleanUsername}" is already linked to Discord @${linkedUserTag} (${existingDiscordId})`);
+      return {
+        success: false,
+        alreadyLinked: true,
+        existingDiscordUser: linkedUserTag,
+        existingDiscordId: existingDiscordId,
+        error: `This Minecraft account (${cleanUsername}) is already linked to Discord @${linkedUserTag}. You must unlink it on https://mineorange.fun/me using that Discord account first.`
+      };
+    }
+
+    // 2️⃣ STRICT 1-TO-1 CHECK: Is this Discord account ALREADY linked to a different Minecraft account?
+    const currentDiscordLink = linkedPlayers.get(targetDiscordId);
+    if (currentDiscordLink && currentDiscordLink.minecraftUsername && currentDiscordLink.minecraftUsername.toLowerCase() !== lowerUsername) {
+      console.warn(`[PlayerLinkService] Blocked attempt: Discord @${codeEntry.discordUser.username} is already linked to Minecraft account "${currentDiscordLink.minecraftUsername}"`);
+      return {
+        success: false,
+        alreadyLinked: true,
+        existingMinecraftUsername: currentDiscordLink.minecraftUsername,
+        error: `Your Discord account (@${codeEntry.discordUser.username}) is already linked to Minecraft account "${currentDiscordLink.minecraftUsername}". Please unlink it on https://mineorange.fun/me first.`
+      };
+    }
+
     // Determine Player Type (Bedrock PE, Java Premium, or Java Cracked)
     const isBedrockPlayer = isBedrock || cleanUsername.startsWith('.') || cleanUsername.startsWith('*');
     let accountType = 'Java Cracked';
@@ -481,6 +546,14 @@ class PlayerLinkService {
     if (tokenToVerify) {
       const verified = verifyLinkToken(tokenToVerify);
       if (verified && (verified.discordId === discordId || (lowerUsername && verified.discordUsername && verified.discordUsername.toLowerCase() === lowerUsername))) {
+        // Prevent restoring if this Minecraft account is already linked to another Discord user
+        const lowerMc = (verified.minecraftUsername || '').toLowerCase();
+        const existingOwner = mcToDiscord.get(lowerMc);
+        if (existingOwner && String(existingOwner) !== String(verified.discordId)) {
+          console.warn(`[PlayerLinkService] Token rehydration rejected: ${verified.minecraftUsername} is already linked to Discord ${existingOwner}`);
+          return null;
+        }
+
         const restored = {
           discordId: verified.discordId,
           discordUsername: verified.discordUsername,
@@ -543,22 +616,26 @@ class PlayerLinkService {
     return await fetchFromFirebase();
   }
 
-  // Ensure data is loaded from Firebase if empty (async helper for serverless/cold starts)
-  static async ensureLoaded() {
+  // Ensure data is loaded from Firebase (async helper for serverless/cold starts)
+  static async ensureLoaded(forceRefresh = false) {
     loadLinks();
-    if (linkedPlayers.size === 0) {
+    if (forceRefresh || linkedPlayers.size === 0) {
       await fetchFromFirebase();
     }
   }
 
   // Async getLinkStatus ensuring Firebase sync
   static async getLinkStatusAsync(discordId, discordUsername, linkToken, cachedPlayer) {
+    let cloudFound = false;
     if (discordId) {
-      await fetchPlayerFromFirebase(discordId);
+      const fbItem = await fetchPlayerFromFirebase(discordId);
+      if (fbItem) cloudFound = true;
     } else {
       await PlayerLinkService.ensureLoaded();
     }
-    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, linkToken, cachedPlayer);
+    // Only pass linkToken if user exists in cloud or cloud DB is not configured (prevents resurrecting unlinked players)
+    const effectiveToken = (cloudFound || !process.env.FIREBASE_DATABASE_URL) ? linkToken : null;
+    let link = PlayerLinkService.getLinkStatus(discordId, discordUsername, effectiveToken, cachedPlayer);
     return link;
   }
 
@@ -675,35 +752,75 @@ class PlayerLinkService {
 
   // Unlink an account
   static async unlink(discordId) {
-    let unlinkedUsername = null;
-    const existing = linkedPlayers.get(discordId);
-    if (existing) {
-      unlinkedUsername = existing.minecraftUsername;
-      linkedPlayers.delete(discordId);
-      mcToDiscord.delete(existing.minecraftUsername.toLowerCase());
-      saveLinks();
-      PlayerLinkService.notifySse(discordId, { event: 'unlinked' });
-    } else {
-      for (const [id, item] of linkedPlayers.entries()) {
-        if (item.discordId === discordId || (item.discordUsername && item.discordUsername.toLowerCase() === (discordId || '').toLowerCase())) {
-          linkedPlayers.delete(id);
-          mcToDiscord.delete(item.minecraftUsername.toLowerCase());
-          saveLinks();
-          PlayerLinkService.notifySse(id, { event: 'unlinked' });
-          break;
+    if (!discordId) return false;
+    const strId = String(discordId).trim();
+
+    // Ensure freshest state is loaded from Firebase
+    await PlayerLinkService.ensureLoaded(true);
+
+    const unlinkedMinecraftUsernames = new Set();
+
+    // 1. Find in linkedPlayers by ID
+    if (linkedPlayers.has(strId)) {
+      const rec = linkedPlayers.get(strId);
+      if (rec && rec.minecraftUsername) {
+        unlinkedMinecraftUsernames.add(rec.minecraftUsername.toLowerCase());
+      }
+      linkedPlayers.delete(strId);
+    }
+
+    // 2. Also scan for any records matching discordId or discordUsername
+    for (const [id, item] of linkedPlayers.entries()) {
+      if (String(id) === strId || (item.discordUsername && item.discordUsername.toLowerCase() === strId.toLowerCase())) {
+        if (item.minecraftUsername) {
+          unlinkedMinecraftUsernames.add(item.minecraftUsername.toLowerCase());
         }
+        linkedPlayers.delete(id);
       }
     }
+
+    // 3. Remove all unlinked Minecraft usernames from mcToDiscord
+    for (const lowerName of unlinkedMinecraftUsernames) {
+      if (mcToDiscord.get(lowerName) === strId || !linkedPlayers.has(mcToDiscord.get(lowerName))) {
+        mcToDiscord.delete(lowerName);
+      }
+      console.log(`[PlayerLinkService] Unlinked Minecraft account "${lowerName}" from Discord ${strId}`);
+    }
+
+    saveLinks();
+
+    // Notify connected SSE browser clients for this user
+    PlayerLinkService.notifySse(strId, { event: 'unlinked' });
 
     // Delete from Firebase RTDB
     const firebaseUrl = process.env.FIREBASE_DATABASE_URL || (config && config.firebaseDatabaseUrl);
     if (firebaseUrl) {
       try {
         const cleanUrl = firebaseUrl.replace(/\/$/, '');
-        await fetch(`${cleanUrl}/linked_players/${discordId}.json`, { method: 'DELETE' });
-      } catch (err) {}
+        await fetch(`${cleanUrl}/linked_players/${strId}.json`, { method: 'DELETE' });
+        console.log(`[Firebase] Deleted linked_players/${strId}.json from Firebase RTDB`);
+      } catch (err) {
+        console.warn('[Firebase Delete Error]', err.message);
+      }
     }
     return true;
+  }
+
+  // Unlink by Minecraft username (helper for admin actions)
+  static async unlinkByMinecraftUsername(minecraftUsername) {
+    if (!minecraftUsername) return false;
+    await PlayerLinkService.ensureLoaded(true);
+    const lowerName = minecraftUsername.trim().toLowerCase();
+    const discordId = mcToDiscord.get(lowerName);
+    if (discordId) {
+      return await PlayerLinkService.unlink(discordId);
+    }
+    for (const [id, item] of linkedPlayers.entries()) {
+      if (item && item.minecraftUsername && item.minecraftUsername.toLowerCase() === lowerName) {
+        return await PlayerLinkService.unlink(id);
+      }
+    }
+    return false;
   }
 
   // Clear all links across memory, disk, and Firebase (for full testing reset)

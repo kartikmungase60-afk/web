@@ -732,7 +732,14 @@
               const cachedLinked = localStorage.getItem('battlepie_linked_player');
               if (cachedLinked) {
                 const lp = JSON.parse(cachedLinked);
-                if (lp && lp.minecraftUsername) {
+                // Ensure cached player matches current logged-in Discord user (if user is logged in)
+                if (currentUser && currentUser.id && lp && lp.discordId && String(lp.discordId) !== String(currentUser.id)) {
+                  localStorage.removeItem('battlepie_linked_player');
+                  localStorage.removeItem('battlepie_link_token');
+                  linkToken = '';
+                  this.isLinked = false;
+                  this.linkedPlayer = null;
+                } else if (lp && lp.minecraftUsername) {
                   this.isLinked = true;
                   this.linkedPlayer = lp;
                   if (!linkToken && lp.linkToken) {

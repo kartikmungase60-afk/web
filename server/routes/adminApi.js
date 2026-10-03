@@ -632,13 +632,13 @@ router.get('/players', (req, res) => {
   }
 });
 
-router.delete('/players/:discordId', (req, res) => {
+router.delete('/players/:discordId', async (req, res) => {
   try {
     const { discordId } = req.params;
     const status = PlayerLinkService.getLinkStatus(discordId);
     const username = status ? status.minecraftUsername : 'Unknown';
 
-    PlayerLinkService.unlink(discordId);
+    await PlayerLinkService.unlink(discordId);
 
     dataManager.addAuditLog({
       ip: getClientIp(req),

@@ -58,4 +58,3 @@ command /link [<text>]:
 
         # Forward directly to MineOrangeLink Java plugin which contacts https://mineorange.fun/api/auth/link/ingame
         execute player command "mineorangelink:link %{_code}%"
-        set {mineorange::linked::%player's uuid%} to true
