@@ -7,11 +7,12 @@ class MinecraftLogBridge {
     this.conn = null;
     this.sftp = null;
     this.running = false;
-    this.pollInterval = 2000; // 2 seconds
+    this.pollInterval = 1000; // 1 second
     this.timer = null;
     this.skinSyncTimer = null;
     this.processedCommands = new Set();
     this.isChecking = false;
+    this.isSyncingSkins = false;
     this.lastSkinSyncTime = 0;
     
     this.config = {
@@ -28,7 +29,7 @@ class MinecraftLogBridge {
   start() {
     if (this.running) return;
     this.running = true;
-    console.log('[MinecraftLogBridge] Starting automated in-game /link & dynamic /skin bridge via SFTP...');
+    console.log('[MinecraftLogBridge] Starting automated in-game /link & dynamic 1-second /skin bridge via SFTP...');
     this.connect();
     this.startPeriodicSkinSync();
   }
@@ -37,7 +38,8 @@ class MinecraftLogBridge {
     this.running = false;
     if (this.timer) clearTimeout(this.timer);
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    if (this.skinSyncTimer) clearInterval(this.skinSyncTimer);
+    if (this.skinSyncTimer) clearTimeout(this.skinSyncTimer);
+    this.isSyncingSkins = false;
     this.sftp = null;
     if (this.conn) {
       try { this.conn.destroy(); } catch (e) {}
@@ -92,6 +94,7 @@ class MinecraftLogBridge {
   scheduleReconnect() {
     if (!this.running) return;
     this.isChecking = false;
+    this.isSyncingSkins = false;
     this.sftp = null;
     if (this.conn) {
       try { this.conn.destroy(); } catch (e) {}
@@ -190,7 +193,7 @@ class MinecraftLogBridge {
         }
       }
 
-      // Check /skin command
+      // Check /skin command (/skin, /sr, /skinsrestorer)
       const skinCmdMatch = line.match(skinCmdRegex);
       if (skinCmdMatch) {
         const player = skinCmdMatch[1].trim();
@@ -200,10 +203,10 @@ class MinecraftLogBridge {
         if (!this.processedCommands.has(key)) {
           this.processedCommands.add(key);
           console.log(`[MinecraftLogBridge] Detected skin change command: Player=${player} Args=${args}`);
-          // Wait 2 seconds for SkinsRestorer to commit change to disk, then sync
-          setTimeout(() => {
-            this.syncSkinForPlayer(player);
-          }, 2000);
+          // Immediate check + rapid followups so disk write is captured instantly
+          this.syncSkinForPlayer(player);
+          setTimeout(() => this.syncSkinForPlayer(player), 500);
+          setTimeout(() => this.syncSkinForPlayer(player), 1200);
         }
       }
 
@@ -215,9 +218,22 @@ class MinecraftLogBridge {
         if (!this.processedCommands.has(key)) {
           this.processedCommands.add(key);
           console.log(`[MinecraftLogBridge] SkinsRestorer log confirmed for player: ${player}`);
-          setTimeout(() => {
-            this.syncSkinForPlayer(player);
-          }, 1500);
+          this.syncSkinForPlayer(player);
+          setTimeout(() => this.syncSkinForPlayer(player), 500);
+        }
+      }
+
+      // Check player join/login to sync skin upon server entrance
+      const joinRegex = /\[.*?\]\s*\[(?:Server thread|User Authenticator.*?)\/INFO\]:\s*([a-zA-Z0-9_\*\.]+)\s+(?:joined the game|logged in with entity id)/i;
+      const joinMatch = line.match(joinRegex);
+      if (joinMatch) {
+        const player = joinMatch[1].trim();
+        const key = `join:${player}:${line.substring(0, 20)}`;
+        if (!this.processedCommands.has(key)) {
+          this.processedCommands.add(key);
+          console.log(`[MinecraftLogBridge] Player joined game: ${player}`);
+          this.syncSkinForPlayer(player);
+          setTimeout(() => this.syncSkinForPlayer(player), 1000);
         }
       }
     }
@@ -264,14 +280,18 @@ class MinecraftLogBridge {
     }
   }
 
-  // Synchronize skins for all currently linked players
+  // Synchronize skins for all currently linked players concurrently
   async syncAllPlayerSkins() {
-    if (!this.sftp) return;
+    if (!this.sftp || this.isSyncingSkins) return;
+    this.isSyncingSkins = true;
 
     try {
       const links = PlayerLinkService.getAllLinks();
-      for (const link of links) {
-        if (link.minecraftUsername) {
+      if (!links || links.length === 0) return;
+
+      await Promise.all(links.map(async (link) => {
+        if (!link || !link.minecraftUsername) return;
+        try {
           const skinData = await SkinsRestorerService.resolveSkinWithSftp(
             this.sftp,
             link.minecraftUuid,
@@ -280,21 +300,30 @@ class MinecraftLogBridge {
           if (skinData && skinData.skinUrl) {
             PlayerLinkService.updatePlayerSkin(link.discordId, skinData);
           }
-        }
-      }
+        } catch (e) {}
+      }));
     } catch (err) {
       console.warn('[MinecraftLogBridge] Error in syncAllPlayerSkins:', err.message);
+    } finally {
+      this.isSyncingSkins = false;
     }
   }
 
-  // Periodic skin sync every 15 seconds
+  // Non-overlapping 1-second check system for all players
   startPeriodicSkinSync() {
-    if (this.skinSyncTimer) clearInterval(this.skinSyncTimer);
-    this.skinSyncTimer = setInterval(() => {
-      if (this.running && this.sftp) {
-        this.syncAllPlayerSkins();
+    if (this.skinSyncTimer) clearTimeout(this.skinSyncTimer);
+
+    const runSyncLoop = async () => {
+      if (!this.running) return;
+      if (this.sftp && !this.isSyncingSkins) {
+        await this.syncAllPlayerSkins();
       }
-    }, 15000);
+      if (this.running) {
+        this.skinSyncTimer = setTimeout(runSyncLoop, 1000);
+      }
+    };
+
+    this.skinSyncTimer = setTimeout(runSyncLoop, 1000);
   }
 
   scheduleNextCheck() {

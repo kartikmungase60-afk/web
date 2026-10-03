@@ -797,7 +797,7 @@
                     localStorage.setItem('battlepie_link_token', data.linkToken || data.linkedPlayer.linkToken);
                   }
                   clearInterval(this.timer);
-                  clearInterval(this.pollTimer);
+                  this.startPolling();
                 } else if (data.activeCode && data.activeCode.code) {
                   this.isLinked = false;
                   this.linkedPlayer = null;
@@ -825,7 +825,7 @@
                 if (this.isLinked && this.linkedPlayer) {
                   localStorage.setItem('battlepie_linked_player', JSON.stringify(this.linkedPlayer));
                   clearInterval(this.timer);
-                  clearInterval(this.pollTimer);
+                  this.startPolling();
                 }
                 return;
               }
@@ -932,7 +932,7 @@
 
         startPolling() {
           clearInterval(this.pollTimer);
-          // Poll every 4 seconds to guarantee instant update on /link and dynamic skin changes
+          // Poll every 1 second to guarantee instant update on /link and dynamic skin changes for all players
           this.pollTimer = setInterval(async () => {
             if (!this.authenticated || !this.user) return;
             try {
@@ -959,6 +959,8 @@
                 if (data.isLinked && data.linkedPlayer) {
                   const wasNotLinked = !this.isLinked;
                   const oldSkin = this.linkedPlayer ? this.linkedPlayer.skinUrl : '';
+                  const oldHash = this.linkedPlayer ? this.linkedPlayer.textureHash : '';
+                  const oldUpdate = this.linkedPlayer ? this.linkedPlayer.lastSkinUpdate : '';
                   this.isLinked = true;
                   this.linkedPlayer = data.linkedPlayer;
                   localStorage.setItem('battlepie_linked_player', JSON.stringify(data.linkedPlayer));
@@ -969,19 +971,28 @@
                   if (wasNotLinked) {
                     clearInterval(this.timer);
                     if (window.zlToast) window.zlToast(`Linked to ${data.linkedPlayer.minecraftUsername}!`);
-                  } else if (oldSkin && data.linkedPlayer.skinUrl && oldSkin !== data.linkedPlayer.skinUrl) {
+                  } else if ((oldSkin && data.linkedPlayer.skinUrl && oldSkin !== data.linkedPlayer.skinUrl) ||
+                             (oldHash && data.linkedPlayer.textureHash && oldHash !== data.linkedPlayer.textureHash) ||
+                             (oldUpdate && data.linkedPlayer.lastSkinUpdate && oldUpdate !== data.linkedPlayer.lastSkinUpdate)) {
                     if (window.zlToast) window.zlToast('Player skin updated from in-game server!');
                   }
+                } else if (!data.isLinked && this.isLinked) {
+                  // Player unlinked on server
+                  this.isLinked = false;
+                  this.linkedPlayer = null;
+                  localStorage.removeItem('battlepie_linked_player');
+                  localStorage.removeItem('battlepie_link_token');
+                  this.generateNewCode();
                 }
               }
             } catch (e) {}
-          }, 4000);
+          }, 1000);
         },
 
         getSkinUrl(p) {
           if (!p) return '';
           const base = p.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(p.minecraftUsername) + '/right');
-          const v = p.textureHash || (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
+          const v = (p.textureHash ? p.textureHash.substring(0, 10) + '_' : '') + (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
           return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
         },
 

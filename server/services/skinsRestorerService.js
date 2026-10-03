@@ -186,14 +186,25 @@ class SkinsRestorerService {
     });
   }
 
-  // Standalone fetch creating temporary connection if needed (with 3.5s cache)
+  // Standalone fetch creating temporary connection if needed (with 1s cache, reusing long-lived SFTP session when available)
   async fetchPlayerSkin(playerUuid, minecraftUsername) {
     if (!playerUuid) return null;
 
     const cached = this.skinCache.get(playerUuid);
-    if (cached && Date.now() - cached.timestamp < 3500) {
+    if (cached && Date.now() - cached.timestamp < 1000) {
       return cached.data;
     }
+
+    try {
+      const minecraftLogBridge = require('./minecraftLogBridge');
+      if (minecraftLogBridge && minecraftLogBridge.sftp) {
+        const res = await this.resolveSkinWithSftp(minecraftLogBridge.sftp, playerUuid, minecraftUsername);
+        if (res) {
+          this.skinCache.set(playerUuid, { data: res, timestamp: Date.now() });
+        }
+        return res || (cached ? cached.data : null);
+      }
+    } catch (e) {}
 
     return new Promise((resolve) => {
       const conn = new Client();

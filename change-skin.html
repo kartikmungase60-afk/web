@@ -311,7 +311,7 @@
           this.loadFromStorage();
           this.syncWithServer();
           this.initSse();
-          this.pollTimer = setInterval(() => this.syncWithServer(), 3500);
+          this.pollTimer = setInterval(() => this.syncWithServer(), 1000);
           window.addEventListener('storage', () => this.loadFromStorage());
           document.addEventListener('battlepie:auth:changed', () => this.loadFromStorage());
         },

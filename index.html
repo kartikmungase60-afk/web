@@ -72,7 +72,7 @@
         init() {
           this.checkStatus();
           this.initSse();
-          this.pollTimer = setInterval(() => this.checkStatus(), 3500);
+          this.pollTimer = setInterval(() => this.checkStatus(), 1000);
           window.addEventListener('storage', () => this.checkLocal());
           document.addEventListener('battlepie:auth:changed', () => {
             this.checkLocal();
@@ -107,7 +107,7 @@
         getSkinUrl(p) {
           if (!p) return '';
           const base = p.skinUrl || ('https://mc-heads.net/body/' + encodeURIComponent(p.minecraftUsername) + '/right');
-          const v = p.textureHash || (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
+          const v = (p.textureHash ? p.textureHash.substring(0, 10) + '_' : '') + (p.lastSkinUpdate ? new Date(p.lastSkinUpdate).getTime() : Date.now());
           return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
         },
 
