@@ -36,8 +36,9 @@ app.use('/api/auth', require('./routes/authApi'));
 app.use('/api/admin', require('./routes/adminApi'));
 app.use('/api', require('./routes/featuresApi'));
 
-// Uploads static directory
+// Uploads & Packs static directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/packs', express.static(path.join(__dirname, '../packs')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

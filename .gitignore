@@ -48,5 +48,11 @@ green_bird.png
 kermit.png
 kp.png
 notch.png
+scratch_pack/
+scratch_resourcepack.zip
+tools/minecraft/dm_*.yml
+tools/minecraft/shop_*.yml
+tools/minecraft/shopguiplus_config.yml
+
 raw_texture_d8.png
 skin_*.png
